@@ -4,9 +4,6 @@ from __future__ import print_function
 import time
 import os
 
-# Train on CPU (hide GPU) due to memory constraints
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
-
 import tensorflow as tf
 import numpy as np
 import scipy.sparse as sp
@@ -14,11 +11,10 @@ import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 
-from gae.optimizer import OptimizerAE, OptimizerVAE
+from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from gae.model import GCNModelAE, GCNModelVAE
 from model import GCNModelAE, GCNModelVAE
-from gae.preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
+from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
 
 # Settings
 flags = tf.app.flags
@@ -35,9 +31,7 @@ flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
-
-
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 
 
 model_str = FLAGS.model
@@ -100,8 +94,13 @@ with tf.name_scope('optimizer'):
                            pos_weight=pos_weight,
                            norm=norm)
 
-# Initialize session
-sess = tf.Session()
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+if FLAGS.gpu == -1:
+    sess = tf.Session()
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
+    gpu_options = tf.GPUOptions(allow_growth=True)
+    sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
 sess.run(tf.global_variables_initializer())
 
 cost_val = []
