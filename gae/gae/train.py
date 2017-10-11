@@ -25,6 +25,7 @@ flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 16, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 16, 'Number of units in hidden layer 4.')
+flags.DEFINE_integer('hidden5', 16, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 

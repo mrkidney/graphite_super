@@ -10,6 +10,8 @@ def sparse_to_tuple(sparse_mx):
     shape = sparse_mx.shape
     return coords, values, shape
 
+def preprocess_partial_graphs(adj):
+    
 
 def preprocess_graph(adj):
     adj = sp.coo_matrix(adj)
