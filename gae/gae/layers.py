@@ -101,13 +101,12 @@ class AutoregressiveConfigurer(Layer):
         self.dropout = dropout
         self.act = act
         self.input_dim = input_dim
-        self.partials = partials
 
-    def _call(self, inputs):
+    def _call(self, inputs, partials):
         num_nodes = int(inputs.get_shape()[0])
         inputs = tf.nn.dropout(inputs, 1-self.dropout)
-        
-        output = sparse_tensor_dense_matmul(self.partials, inputs)
+
+        output = sparse_tensor_dense_matmul(partials, inputs)
         output = tf.reshape(output, [num_nodes*num_nodes, 2, self.input_dim])
         output = tf.reduce_prod(output, axis = 1)
         return output

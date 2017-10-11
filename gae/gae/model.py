@@ -114,23 +114,21 @@ class GCNModelVAE(Model):
         self.z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
 
 
-        self.z = Dense(input_dim=FLAGS.hidden2,
+        self.z = GraphConvolution(input_dim=FLAGS.hidden2,
                                           output_dim=FLAGS.hidden3,
                                           dropout=self.dropout,
+                                          adj=self.adj,
                                           act=tf.nn.relu,
                                           logging=self.logging)(self.z)
         
-        self.z = Dense(input_dim=FLAGS.hidden3,
+        self.z = GraphConvolution(input_dim=FLAGS.hidden3,
                                           output_dim=FLAGS.hidden4,
                                           dropout=self.dropout,
+                                          adj=self.adj,
                                           act=lambda x: x,
                                           logging=self.logging)(self.z)
 
-        # self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
-        #                               act=lambda x: x,
-        #                               logging=self.logging)(self.z)
-
-        self.reconstructions = AutoregressiveConfigurer(input_dim=FLAGS.hidden4,
+        self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
                                       logging=self.logging)(self.z)
 
