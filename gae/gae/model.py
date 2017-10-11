@@ -130,7 +130,7 @@ class GCNModelVAE(Model):
 
         self.z = GraphConvolution(input_dim=FLAGS.hidden2,
                                           output_dim=FLAGS.hidden3,
-                                          adj = self.z_adj
+                                          adj = self.z_adj,
                                           dropout=self.dropout,
                                           act=tf.nn.relu,
                                           logging=self.logging)(self.z)
