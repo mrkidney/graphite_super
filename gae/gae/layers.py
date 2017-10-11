@@ -120,11 +120,10 @@ class InnerProductConfigurer(Layer):
         self.input_dim = input_dim
 
     def _call(self, inputs):
-        num_nodes = int(inputs.get_shape()[0])
         inputs = tf.nn.dropout(inputs, 1-self.dropout)
 
         output = tf.expand_dims(inputs, 0) * tf.expand_dims(inputs, 1)
-        output = tf.reshape(output, [num_nodes*num_nodes, self.input_dim])
+        output = tf.reshape(output, [-1, self.input_dim])
         return output
 
 class GraphConvolution(Layer):

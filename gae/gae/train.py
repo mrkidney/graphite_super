@@ -55,6 +55,7 @@ if FLAGS.features == 0:
 
 # Some preprocessing
 # partials = preprocess_partial_graphs(adj)
+partials = adj
 adj_norm = preprocess_graph(adj)
 
 # Define placeholders
