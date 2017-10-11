@@ -84,7 +84,7 @@ class GCNModelVAE(Model):
         self.features_nonzero = features_nonzero
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
-        self.partials = tf.reshape(placeholders['partials'], (-1, num_nodes))
+        self.partials = tf.sparse_reshape(placeholders['partials'], (-1, num_nodes))
         self.dropout = placeholders['dropout']
         self.build()
 
