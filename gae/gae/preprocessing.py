@@ -10,8 +10,43 @@ def sparse_to_tuple(sparse_mx):
     shape = sparse_mx.shape
     return coords, values, shape
 
+def preprocess_graph_coo(adj):
+    adj = sp.coo_matrix(adj)
+    adj_ = adj + sp.eye(adj.shape[0])
+    rowsum = np.array(adj_.sum(1))
+    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+    adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
+    return adj_normalized
+
 def preprocess_partial_graphs(adj):
-    return 0
+    num_nodes = adj.shape[0]
+    row = []
+    col = []
+    data = []
+    partial = sp.dok_matrix((num_nodes, num_nodes))
+    partial_norm = preprocess_graph_coo(partial)
+    for i in range(num_nodes):
+        print(i * 1.0 / num_nodes)
+        for j in range(i):
+            val = adj[i,j]
+            if val != 0:
+                partial[i,j] = val
+                partial[j,i] = val
+                partial_norm = preprocess_graph_coo(partial)
+
+            row1 = partial_norm.getrow(i).tocoo()
+            row2 = partial_norm.getrow(j).tocoo()
+            count = len(row1.col) + len(row2.col)
+
+            row += [i*num_nodes + j] * count
+            col += list(row1.col) + list(row2.col + num_nodes)
+            data += list(row1.data) + list(row2.data)
+            row += [j*num_nodes + i] * count
+            col += list(row1.col) + list(row2.col + num_nodes)
+            data += list(row1.data) + list(row2.data)
+
+    partials = sp.csr_matrix((data, (row, col)), shape=(num_nodes*num_nodes, 2*num_nodes))
+    return partials
 
 def preprocess_graph(adj):
     adj = sp.coo_matrix(adj)
@@ -22,12 +57,13 @@ def preprocess_graph(adj):
     return sparse_to_tuple(adj_normalized)
 
 
-def construct_feed_dict(adj_normalized, adj, features, placeholders):
+def construct_feed_dict(adj_normalized, adj, features, partials, placeholders):
     # construct feed dictionary
     feed_dict = dict()
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
+    feed_dict.update({placeholders['partials']: partials})
     return feed_dict
 
 
@@ -113,4 +149,11 @@ def mask_test_edges(adj):
     # NOTE: these edge lists only contain single direction of edge!
     return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
 
+# adj = sp.dok_matrix((3, 3))
+# for i in range(3):
+#     for j in range(3):
+#         adj[i,j] = (i + j) % 2
 
+# print(adj.todense())
+# print("and")
+# print(preprocess_partial_graphs(adj).todense())

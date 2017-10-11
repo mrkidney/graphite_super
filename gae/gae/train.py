@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import time
 import os
+import sys
 
 import tensorflow as tf
 import numpy as np
@@ -14,7 +15,7 @@ from sklearn.metrics import average_precision_score
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
 from model import GCNModelAE, GCNModelVAE
-from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
+from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, preprocess_partial_graphs
 
 # Settings
 flags = tf.app.flags
@@ -22,7 +23,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
+flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 16, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 16, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 16, 'Number of units in hidden layer 5.')
@@ -53,6 +54,8 @@ if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless
 
 # Some preprocessing
+#partials = preprocess_partial_graphs(adj)
+partials = adj
 adj_norm = preprocess_graph(adj)
 
 # Define placeholders
@@ -60,6 +63,7 @@ placeholders = {
     'features': tf.sparse_placeholder(tf.float32),
     'adj': tf.sparse_placeholder(tf.float32),
     'adj_orig': tf.sparse_placeholder(tf.float32),
+    'partials': tf.sparse_placeholder(tf.float32),
     'dropout': tf.placeholder_with_default(0., shape=())
 }
 
@@ -150,7 +154,7 @@ for epoch in range(FLAGS.epochs):
 
     t = time.time()
     # Construct feed dictionary
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
     # Run single weight update
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)

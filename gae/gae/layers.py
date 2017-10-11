@@ -29,9 +29,6 @@ def dropout_sparse(x, keep_prob, num_nonzero_elems):
     pre_out = tf.sparse_retain(x, dropout_mask)
     return pre_out * (1./keep_prob)
 
-def gated_activation(x, y):
-    return tf.multiply(tf.nn.sigmoid(x), tf.nn.tanh(y))
-
 class Layer(object):
     """Base layer class. Defines basic API for all layer objects.
 
@@ -99,18 +96,18 @@ class Dense(Layer):
 
 class AutoregressiveConfigurer(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, partials, dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveConfigurer, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
         self.input_dim = input_dim
+        self.partials = partials
 
     def _call(self, inputs):
         num_nodes = int(inputs.get_shape()[0])
-        inputs = tf.nn.dropout(inputs, 1-self.dropout)
-
-        output = tf.expand_dims(inputs, 0) * tf.expand_dims(inputs, 1)
-        output = tf.reshape(output, [num_nodes*num_nodes, self.input_dim])
+        output = sparse_tensor_dense_matmul(self.partials, inputs)
+        output = tf.reshape(output, [num_nodes*num_nodes, 2, self.input_dim])
+        output = tf.reduce_prod(output, axis = 1)
         return output
 
 class InnerProductConfigurer(Layer):
