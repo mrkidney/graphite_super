@@ -141,7 +141,6 @@ def get_roc_score(edges_pos, edges_neg, emb=None):
 
     return roc_score, ap_score
 
-
 cost_val = []
 acc_val = []
 val_roc_score = []
