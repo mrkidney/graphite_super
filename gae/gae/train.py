@@ -54,8 +54,7 @@ if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless
 
 # Some preprocessing
-#partials = preprocess_partial_graphs(adj)
-partials = adj
+partials = preprocess_partial_graphs(adj)
 adj_norm = preprocess_graph(adj)
 
 # Define placeholders

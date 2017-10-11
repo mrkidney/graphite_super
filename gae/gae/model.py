@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
+from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveConfigurer
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -84,7 +84,7 @@ class GCNModelVAE(Model):
         self.features_nonzero = features_nonzero
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
-        #self.partials = tf.sparse_reshape(placeholders['partials'], (-1, num_nodes))
+        self.partials = tf.sparse_reshape(placeholders['partials'], (-1, num_nodes))
         self.dropout = placeholders['dropout']
         self.build()
 
@@ -126,7 +126,11 @@ class GCNModelVAE(Model):
                                           act=lambda x: x,
                                           logging=self.logging)(self.z)
 
-        self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
+        # self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
+        #                               act=lambda x: x,
+        #                               logging=self.logging)(self.z)
+
+        self.reconstructions = AutoregressiveConfigurer(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
                                       logging=self.logging)(self.z)
 
