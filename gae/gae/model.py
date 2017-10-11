@@ -126,20 +126,20 @@ class GCNModelVAE(Model):
                                           act=lambda x: x,
                                           logging=self.logging)(self.z)
 
-        self.reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
+        self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
                                       logging=self.logging)(self.z)
 
-        # self.reconstructions = Dense(input_dim=FLAGS.hidden4,
-        #                                   output_dim=FLAGS.hidden5,
-        #                                   dropout=self.dropout,
-        #                                   act=tf.nn.relu,
-        #                                   logging=self.logging)(self.reconstructions)
+        self.reconstructions = Dense(input_dim=FLAGS.hidden4,
+                                          output_dim=FLAGS.hidden5,
+                                          dropout=self.dropout,
+                                          act=tf.nn.relu,
+                                          logging=self.logging)(self.reconstructions)
 
-        # self.reconstructions = Dense(input_dim=FLAGS.hidden5,
-        #                                   output_dim=1,
-        #                                   dropout=self.dropout,
-        #                                   act=lambda x: x,
-        #                                   logging=self.logging)(self.reconstructions)
+        self.reconstructions = Dense(input_dim=FLAGS.hidden5,
+                                          output_dim=1,
+                                          dropout=self.dropout,
+                                          act=lambda x: x,
+                                          logging=self.logging)(self.reconstructions)
 
-        # self.reconstructions = tf.reshape(self.reconstructions, [-1])
+        self.reconstructions = tf.reshape(self.reconstructions, [-1])
