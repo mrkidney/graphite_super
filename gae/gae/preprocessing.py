@@ -63,7 +63,7 @@ def construct_feed_dict(adj_normalized, adj, features, partials, placeholders):
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
-    # feed_dict.update({placeholders['partials']: partials})
+    feed_dict.update({placeholders['partials']: partials})
     return feed_dict
 
 

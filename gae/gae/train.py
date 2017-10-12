@@ -21,7 +21,7 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 1000, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 32, 'Number of units in hidden layer 3.')
@@ -55,7 +55,7 @@ if FLAGS.features == 0:
 
 # Some preprocessing
 # partials = preprocess_partial_graphs(adj)
-partials = adj
+partials = sparse_to_tuple(sp.coo_matrix(adj.shape[0],adj.shape[0]))
 adj_norm = preprocess_graph(adj)
 
 # Define placeholders
@@ -115,13 +115,15 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg, emb=None):
     if emb is None:
         feed_dict.update({placeholders['dropout']: 0})
-        emb = sess.run(model.z_mean, feed_dict=feed_dict)
+        emb, recon = sess.run([model.z_mean, model.reconstructions], feed_dict=feed_dict)
 
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
-    # Predict on test set of edges
-    adj_rec = np.dot(emb, emb.T)
+    #adj_rec = np.dot(emb, emb.T)
+
+    adj_rec = np.reshape(recon, (len(emb), len(emb)))
+
     preds = []
     pos = []
     for e in edges_pos:
@@ -152,13 +154,10 @@ adj_label = sparse_to_tuple(adj_label)
 for epoch in range(FLAGS.epochs):
 
     t = time.time()
-    # Construct feed dictionary
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    # Run single weight update
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
-    # Compute average loss
     avg_cost = outs[1]
     avg_accuracy = outs[2]
 
