@@ -21,7 +21,7 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 1000, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 700, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 32, 'Number of units in hidden layer 3.')
@@ -153,10 +153,9 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
 
-    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_definitive)
-    adj = adj_train
-    adj_norm = preprocess_graph(adj)
-    adj_label = adj_train + sp.eye(adj_train.shape[0])
+    adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
+    adj_norm = preprocess_graph(adj_train_mini)
+    adj_label = adj_train_mini + sp.eye(num_nodes)
     adj_label = sparse_to_tuple(adj_label)
 
     t = time.time()
