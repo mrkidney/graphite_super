@@ -29,6 +29,11 @@ def dropout_sparse(x, keep_prob, num_nonzero_elems):
     pre_out = tf.sparse_retain(x, dropout_mask)
     return pre_out * (1./keep_prob)
 
+def zeros(shape, name=None):
+    """All zeros."""
+    initial = tf.zeros(shape, dtype=tf.float32)
+    return tf.Variable(initial, name=name)
+
 class Layer(object):
     """Base layer class. Defines basic API for all layer objects.
 
