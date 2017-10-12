@@ -42,6 +42,8 @@ dataset_str = FLAGS.dataset
 # Load data
 adj, features = load_data(dataset_str)
 
+adj_definitive = adj
+
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
 adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
@@ -151,7 +153,7 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
 
-    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
+    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_definitive)
     adj = adj_train
     adj_norm = preprocess_graph(adj)
     adj_label = adj_train + sp.eye(adj_train.shape[0])
