@@ -116,16 +116,17 @@ class GCNModelVAE(Model):
 
     def decoder(self, z):
 
-        z = Dense(input_dim=FLAGS.hidden2,
-                                          output_dim=FLAGS.hidden3,
-                                          dropout=self.dropout,
-                                          act=tf.nn.relu,
-                                          logging=self.logging)(z)
+        # z = Dense(input_dim=FLAGS.hidden2,
+        #                                   output_dim=FLAGS.hidden3,
+        #                                   dropout=self.dropout,
+        #                                   act=tf.nn.relu,
+        #                                   logging=self.logging)(z)
         
-        z = Dense(input_dim=FLAGS.hidden2,
+        z = Dense(input_dim=FLAGS.hidden3,
                                           output_dim=FLAGS.hidden4,
                                           dropout=self.dropout,
                                           act=lambda x: x,
+                                          bias=True,
                                           logging=self.logging)(z)
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
