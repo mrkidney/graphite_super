@@ -130,7 +130,7 @@ class GCNModelVAE(Model):
                                       act=lambda x: x,
                                       logging=self.logging)(self.z)
 
-        self.reconstructions = Dense(input_dim=FLAGS.hidden4,
+        self.reconstructions = Dense(input_dim=3 *FLAGS.hidden4,
                                           output_dim=FLAGS.hidden5,
                                           dropout=self.dropout,
                                           act=tf.nn.relu,
