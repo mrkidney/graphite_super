@@ -116,7 +116,7 @@ class GCNModelVAE(Model):
                                           output_dim=1,
                                           dropout=self.dropout,
                                           act=lambda x: x,
-                                          logging=self.logging)(self.reconstructions)
+                                          logging=self.logging)(reconstructions)
 
         return tf.reshape(reconstructions, [-1])
 
@@ -147,4 +147,4 @@ class GCNModelVAE(Model):
 
         self.reconstructions = self.decoder(self.z)
         self.reconstructions_noiseless = self.decoder(self.z_mean)
-        
+
