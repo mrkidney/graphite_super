@@ -116,17 +116,17 @@ class GCNModelVAE(Model):
 
     def decoder(self, z):
 
-        z = Dense(input_dim=FLAGS.hidden2,
-                                          output_dim=FLAGS.hidden3,
-                                          dropout=self.dropout,
-                                          act=tf.nn.relu,
-                                          logging=self.logging)(z)
+        # z = Dense(input_dim=FLAGS.hidden2,
+        #                                   output_dim=FLAGS.hidden3,
+        #                                   dropout=self.dropout,
+        #                                   act=tf.nn.relu,
+        #                                   logging=self.logging)(z)
         
-        z = Dense(input_dim=FLAGS.hidden3,
-                                          output_dim=FLAGS.hidden4,
-                                          dropout=self.dropout,
-                                          act=lambda x: x,
-                                          logging=self.logging)(z)
+        # z = Dense(input_dim=FLAGS.hidden2,
+        #                                   output_dim=FLAGS.hidden4,
+        #                                   dropout=self.dropout,
+        #                                   act=lambda x: x,
+        #                                   logging=self.logging)(z)
 
         reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
@@ -138,13 +138,18 @@ class GCNModelVAE(Model):
                                           act=tf.nn.relu,
                                           logging=self.logging)(reconstructions)
 
-        reconstructions = Dense(input_dim=FLAGS.hidden5,
+        reconstructions = Dense(input_dim=FLAGS.hidden4,
                                           output_dim=1,
                                           dropout=self.dropout,
                                           act=lambda x: x,
                                           logging=self.logging)(reconstructions)
 
-        return tf.reshape(reconstructions, [-1])
+        reconstructions = tf.reshape(reconstructions, [self.n_samples, self.n_samples])
+        reconstructions = tf.matrix_set_diag(reconstructions, 1000 + tf.zeros(self.n_samples))
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
 
     def _build(self):
 
