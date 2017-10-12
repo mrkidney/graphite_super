@@ -88,6 +88,38 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.build()
 
+    def decoder(self, z):
+
+        # z = Dense(input_dim=FLAGS.hidden2,
+        #                                   output_dim=FLAGS.hidden3,
+        #                                   dropout=self.dropout,
+        #                                   act=tf.nn.relu,
+        #                                   logging=self.logging)(z)
+        
+        # z = Dense(input_dim=FLAGS.hidden3,
+        #                                   output_dim=FLAGS.hidden4,
+        #                                   dropout=self.dropout,
+        #                                   act=lambda x: x,
+        #                                   logging=self.logging)(z)
+
+        reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
+                                      act=lambda x: x,
+                                      logging=self.logging)(z)
+
+        reconstructions = Dense(input_dim=2 * FLAGS.hidden4,
+                                          output_dim=FLAGS.hidden5,
+                                          dropout=self.dropout,
+                                          act=tf.nn.relu,
+                                          logging=self.logging)(reconstructions)
+
+        reconstructions = Dense(input_dim=FLAGS.hidden5,
+                                          output_dim=1,
+                                          dropout=self.dropout,
+                                          act=lambda x: x,
+                                          logging=self.logging)(self.reconstructions)
+
+        return tf.reshape(reconstructions, [-1])
+
     def _build(self):
         self.hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden1,
@@ -113,33 +145,6 @@ class GCNModelVAE(Model):
 
         self.z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
 
-
-        # self.z = Dense(input_dim=FLAGS.hidden2,
-        #                                   output_dim=FLAGS.hidden3,
-        #                                   dropout=self.dropout,
-        #                                   act=tf.nn.relu,
-        #                                   logging=self.logging)(self.z)
+        self.reconstructions = self.decoder(self.z)
+        self.reconstructions_noiseless = self.decoder(self.z_mean)
         
-        # self.z = Dense(input_dim=FLAGS.hidden3,
-        #                                   output_dim=FLAGS.hidden4,
-        #                                   dropout=self.dropout,
-        #                                   act=lambda x: x,
-        #                                   logging=self.logging)(self.z)
-
-        self.reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
-                                      act=lambda x: x,
-                                      logging=self.logging)(self.z)
-
-        self.reconstructions = Dense(input_dim=2 * FLAGS.hidden4,
-                                          output_dim=FLAGS.hidden5,
-                                          dropout=self.dropout,
-                                          act=tf.nn.relu,
-                                          logging=self.logging)(self.reconstructions)
-
-        self.reconstructions = Dense(input_dim=FLAGS.hidden5,
-                                          output_dim=1,
-                                          dropout=self.dropout,
-                                          act=lambda x: x,
-                                          logging=self.logging)(self.reconstructions)
-
-        self.reconstructions = tf.reshape(self.reconstructions, [-1])
