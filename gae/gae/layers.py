@@ -124,9 +124,8 @@ class InnerProductConfigurer(Layer):
 
         output = tf.expand_dims(inputs, 0) * tf.expand_dims(inputs, 1)
         output2 = tf.expand_dims(inputs, 0) + tf.expand_dims(inputs, 1)
-        output3 = tf.maximum(tf.expand_dims(inputs, 0), tf.expand_dims(inputs, 1))
-        output = tf.concat((output, output2, output3), axis = 2)
-        output = tf.reshape(output, [-1, 3 * self.input_dim])
+        output = tf.concat((output, output2), axis = 2)
+        output = tf.reshape(output, [-1, 2 * self.input_dim])
         return output
 
 class GraphConvolution(Layer):
