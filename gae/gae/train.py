@@ -23,8 +23,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 700, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 32, 'Number of units in hidden layer 3.')
+flags.DEFINE_integer('hidden2', 20, 'Number of units in hidden layer 2.')
+flags.DEFINE_integer('hidden3', 20, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
@@ -155,8 +155,6 @@ for epoch in range(FLAGS.epochs):
 
     adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
     adj_norm = preprocess_graph(adj_train_mini)
-    adj_label = adj_train_mini + sp.eye(num_nodes)
-    adj_label = sparse_to_tuple(adj_label)
 
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
