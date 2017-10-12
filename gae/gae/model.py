@@ -128,7 +128,7 @@ class GCNModelVAE(Model):
         #                                   act=lambda x: x,
         #                                   logging=self.logging)(z)
 
-        reconstructions = InnerProductConfigurer(input_dim=FLAGS.hidden4,
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
                                       logging=self.logging)(z)
 
@@ -138,11 +138,11 @@ class GCNModelVAE(Model):
         #                                   act=tf.nn.relu,
         #                                   logging=self.logging)(reconstructions)
 
-        reconstructions = Dense(input_dim=FLAGS.hidden4,
-                                          output_dim=1,
-                                          dropout=self.dropout,
-                                          act=lambda x: x,
-                                          logging=self.logging)(reconstructions)
+        # reconstructions = Dense(input_dim=FLAGS.hidden4,
+        #                                   output_dim=1,
+        #                                   dropout=self.dropout,
+        #                                   act=lambda x: x,
+        #                                   logging=self.logging)(reconstructions)
 
         reconstructions = tf.reshape(reconstructions, [self.n_samples, self.n_samples])
         reconstructions = tf.matrix_set_diag(reconstructions, 1000 + tf.zeros(self.n_samples))

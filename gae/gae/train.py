@@ -120,8 +120,6 @@ def get_roc_score(edges_pos, edges_neg, emb=None):
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
-    #adj_rec = np.dot(emb, emb.T)
-
     adj_rec = np.reshape(recon, (num_nodes, num_nodes))
 
     preds = []
@@ -152,6 +150,12 @@ adj_label = sparse_to_tuple(adj_label)
 
 # Train model
 for epoch in range(FLAGS.epochs):
+
+    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
+    adj = adj_train
+    adj_norm = preprocess_graph(adj)
+    adj_label = adj_train + sp.eye(adj_train.shape[0])
+    adj_label = sparse_to_tuple(adj_label)
 
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
