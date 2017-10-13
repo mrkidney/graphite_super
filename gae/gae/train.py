@@ -112,10 +112,9 @@ cost_val = []
 acc_val = []
 
 
-def get_roc_score(edges_pos, edges_neg, emb=None):
-    if emb is None:
-        feed_dict.update({placeholders['dropout']: 0})
-        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+def get_roc_score(edges_pos, edges_neg):
+    feed_dict.update({placeholders['dropout']: 0.})
+    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
@@ -152,10 +151,10 @@ adj_label = sparse_to_tuple(adj_label)
 for epoch in range(FLAGS.epochs):
 
     adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
-    adj_norm = preprocess_graph(adj_train_mini)
+    adj_norm_mini = preprocess_graph(adj_train_mini)
 
     t = time.time()
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
+    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, partials, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
@@ -170,7 +169,6 @@ for epoch in range(FLAGS.epochs):
               "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
               "val_ap=", "{:.5f}".format(ap_curr))
 
+feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
 roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
-# print('Test ROC score: ' + str(roc_score))
-# print('Test AP score: ' + str(ap_score))
-print((roc_score, ap_score))
+print(str(roc_score) + ", " + str(ap_score))

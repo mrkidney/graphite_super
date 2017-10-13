@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveConfigurer
+from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, EuclideanDecoder
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -177,6 +177,7 @@ class GCNModelVAE(Model):
 
         self.encoder(self.inputs)
         z = self.get_z(random = True)
+        self.z = z
         z_noiseless = self.get_z(random = False)
 
         self.reconstructions = self.decoder(z)

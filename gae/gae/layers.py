@@ -172,6 +172,21 @@ class GraphConvolutionSparse(Layer):
         outputs = self.act(x)
         return outputs
 
+class EuclideanDecoder(Layer):
+    """Decoder model layer for link prediction."""
+    def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
+        super(EuclideanDecoder, self).__init__(**kwargs)
+        self.dropout = dropout
+        self.act = act
+        self.input_dim = input_dim
+
+    def _call(self, inputs):
+        inputs = tf.nn.dropout(inputs, 1-self.dropout)
+
+        x = tf.expand_dims(inputs, 0) - tf.expand_dims(inputs, 1)
+        x = tf.square(x)
+        output = 1 - tf.sqrt(tf.reduce_sum(x, 2) + 1e-15)
+        return output
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
