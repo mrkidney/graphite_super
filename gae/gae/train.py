@@ -29,6 +29,7 @@ flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
+flags.DEFINE_integer('edge_dropout', 1, 'Dropout for individual edges in training graph')
 
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -150,8 +151,11 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
 
-    adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
-    adj_norm_mini = preprocess_graph(adj_train_mini)
+    if FLAGS.edge_dropout:
+        adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
+        adj_norm_mini = preprocess_graph(adj_train_mini)
+    else:
+        adj_norm_mini = adj_norm
 
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, partials, placeholders)
