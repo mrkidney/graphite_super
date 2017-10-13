@@ -98,21 +98,46 @@ class GCNModelVAE(Model):
                                               dropout=self.dropout,
                                               logging=self.logging)(inputs)
 
-        z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
+        self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
                                        output_dim=FLAGS.hidden2,
                                        adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)(hidden1)
 
-        z_log_std = GraphConvolution(input_dim=FLAGS.hidden1,
+        self.z_log_std = GraphConvolution(input_dim=FLAGS.hidden1,
                                           output_dim=FLAGS.hidden2,
                                           adj=self.adj,
                                           act=lambda x: x,
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-        return (z_mean, z_log_std)
+        self.z_r = GraphConvolution(input_dim=FLAGS.hidden1,
+                                          output_dim=1,
+                                          adj=self.adj,
+                                          act=lambda x: x,
+                                          dropout=self.dropout,
+                                          logging=self.logging)(hidden1)
+
+        self.z_r_log_std = GraphConvolution(input_dim=FLAGS.hidden1,
+                                          output_dim=1,
+                                          adj=self.adj,
+                                          act=lambda x: x,
+                                          dropout=self.dropout,
+                                          logging=self.logging)(hidden1)
+
+    def get_z(self, random):
+
+        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        if not random:
+          z = self.z_mean
+
+        r = self.z_r + tf.random_normal([self.n_samples, 1]) * tf.exp(self.z_r_log_std)
+        if not random:
+          r = self.z_r
+
+        z = tf.nn.l2_normalize(z, dim = 1)
+        return r * z
 
     def decoder(self, z):
 
@@ -122,14 +147,14 @@ class GCNModelVAE(Model):
         #                                   act=tf.nn.relu,
         #                                   logging=self.logging)(z)
         
-        z = Dense(input_dim=FLAGS.hidden3,
-                                          output_dim=FLAGS.hidden4,
-                                          dropout=self.dropout,
-                                          act=lambda x: x,
-                                          bias=True,
-                                          logging=self.logging)(z)
+        # z = Dense(input_dim=FLAGS.hidden3,
+        #                                   output_dim=FLAGS.hidden4,
+        #                                   dropout=self.dropout,
+        #                                   act=lambda x: x,
+        #                                   bias=True,
+        #                                   logging=self.logging)(z)
 
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
                                       logging=self.logging)(z)
 
@@ -145,19 +170,15 @@ class GCNModelVAE(Model):
         #                                   act=lambda x: x,
         #                                   logging=self.logging)(reconstructions)
 
-        reconstructions = tf.reshape(reconstructions, [self.n_samples, self.n_samples])
-        reconstructions = tf.matrix_set_diag(reconstructions, 1000 + tf.zeros(self.n_samples))
-
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-
     def _build(self):
 
-        self.z_mean, self.z_log_std = self.encoder(self.inputs)
+        self.encoder(self.inputs)
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
 
-        self.z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-
-        self.reconstructions = self.decoder(self.z)
-        self.reconstructions_noiseless = self.decoder(self.z_mean)
+        self.reconstructions = self.decoder(z)
+        self.reconstructions_noiseless = self.decoder(z_noiseless)
 

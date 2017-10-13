@@ -69,7 +69,7 @@ class Layer(object):
 
 class Dense(Layer):
     """Dense layer."""
-    def __init__(self, input_dim, output_dim, dropout=0., sparse_inputs=False,
+    def __init__(self, input_dim, output_dim, dropout=0., pos=False, sparse_inputs=False,
                  act=tf.nn.relu, bias=False, featureless=False, **kwargs):
         super(Dense, self).__init__(**kwargs)
 
@@ -81,6 +81,8 @@ class Dense(Layer):
 
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name='weights')
+            if pos:
+                self.vars['weights'] = tf.square(self.vars['weights'])
             if self.bias:
                 self.vars['bias'] = zeros([output_dim], name='bias')
 

@@ -21,9 +21,9 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 700, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 400, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 20, 'Number of units in hidden layer 2.')
+flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 20, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
@@ -34,15 +34,13 @@ flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-
+flags.DEFINE_integer('verbose', 1, 'Print all epochs')
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
 
 # Load data
 adj, features = load_data(dataset_str)
-
-adj_definitive = adj
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
@@ -117,7 +115,7 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg, emb=None):
     if emb is None:
         feed_dict.update({placeholders['dropout']: 0})
-        emb, recon, labels = sess.run([model.z_mean, model.reconstructions_noiseless, opt.labels_sub], feed_dict=feed_dict)
+        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
@@ -159,7 +157,7 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
     avg_cost = outs[1]
     avg_accuracy = outs[2]
@@ -167,13 +165,12 @@ for epoch in range(FLAGS.epochs):
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
     val_roc_score.append(roc_curr)
 
-    print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-          "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
-          "val_ap=", "{:.5f}".format(ap_curr),
-          "time=", "{:.5f}".format(time.time() - t))
-
-print("Optimization Finished!")
+    if FLAGS.verbose:
+        print("Epoch:", '%04d' % (epoch + 1), "train_kl=", "{:.5f}".format(outs[3]), "train_loss=", "{:.5f}".format(avg_cost),
+              "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
+              "val_ap=", "{:.5f}".format(ap_curr))
 
 roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
-print('Test ROC score: ' + str(roc_score))
-print('Test AP score: ' + str(ap_score))
+# print('Test ROC score: ' + str(roc_score))
+# print('Test AP score: ' + str(ap_score))
+print((roc_score, ap_score))
