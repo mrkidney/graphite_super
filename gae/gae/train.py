@@ -21,7 +21,7 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 700, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 400, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 8, 'Number of units in hidden layer 3.')

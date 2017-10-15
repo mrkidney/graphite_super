@@ -217,10 +217,10 @@ class AutoregressiveDecoder(Layer):
 
             helper_feature = tf.one_hot([row[0]], num_nodes)
             helper_feature = tf.reshape(helper_feature, [num_nodes, 1])
-            z_prime = tf.concat((z, helper_feature), 1)
 
-            hidden = tf.matmul(z_prime, self.vars['weights1'])
+            hidden = tf.matmul(z, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
+            hidden = tf.concat((hidden, helper_feature), 1)
             hidden = tf.matmul(hidden, self.vars['weights2'])
             return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
 
