@@ -38,7 +38,7 @@ class OptimizerVAE(object):
         self.log_lik = self.cost
 
         self.kl = (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_log_std - tf.square(model.z_mean) - tf.square(tf.exp(model.z_log_std)), 1))
-        self.kl += (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_r_log_std - tf.square(model.z_r - 1) - tf.square(tf.exp(model.z_r_log_std)), 1))
+        # self.kl += (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_r_log_std - tf.square(model.z_r - 1) - tf.square(tf.exp(model.z_r_log_std)), 1))
         self.cost -= self.kl
 
         self.opt_op = self.optimizer.minimize(self.cost)

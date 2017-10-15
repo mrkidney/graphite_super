@@ -27,15 +27,16 @@ flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
 flags.DEFINE_integer('hidden3', 20, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
-flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_integer('edge_dropout', 1, 'Dropout for individual edges in training graph')
+flags.DEFINE_integer('symmetric', 1, 'Normalize adjacency matrices symmetrically')
 
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('verbose', 1, 'Print all epochs')
+
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
@@ -54,18 +55,15 @@ adj = adj_train
 if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless
 
-# Some preprocessing
-# partials = preprocess_partial_graphs(adj)
-partials = sparse_to_tuple(sp.coo_matrix(adj.shape[0],adj.shape[0]))
-adj_norm = preprocess_graph(adj)
+adj_norm = preprocess_graph(adj, FLAGS.symmetric)
 
 # Define placeholders
 placeholders = {
     'features': tf.sparse_placeholder(tf.float32),
     'adj': tf.sparse_placeholder(tf.float32),
     'adj_orig': tf.sparse_placeholder(tf.float32),
-    'partials': tf.sparse_placeholder(tf.float32),
-    'dropout': tf.placeholder_with_default(0., shape=())
+    'dropout': tf.placeholder_with_default(0., shape=()),
+    'parallel': tf.placeholder_with_default(1., shape=())
 }
 
 num_nodes = adj.shape[0]
@@ -114,6 +112,7 @@ acc_val = []
 
 
 def get_roc_score(edges_pos, edges_neg):
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
@@ -153,17 +152,19 @@ for epoch in range(FLAGS.epochs):
 
     if FLAGS.edge_dropout:
         adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
-        adj_norm_mini = preprocess_graph(adj_train_mini)
+        adj_norm_mini = preprocess_graph(adj_train_mini, FLAGS.symmetric)
     else:
         adj_norm_mini = adj_norm
 
     t = time.time()
-    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, partials, placeholders)
+    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
+    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl, model.sup], feed_dict=feed_dict)
 
     avg_cost = outs[1]
     avg_accuracy = outs[2]
+
+    print(outs[4])
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
     val_roc_score.append(roc_curr)
@@ -173,6 +174,6 @@ for epoch in range(FLAGS.epochs):
               "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
               "val_ap=", "{:.5f}".format(ap_curr))
 
-feed_dict = construct_feed_dict(adj_norm, adj_label, features, partials, placeholders)
+feed_dict.update({placeholders['parallel']: 0.})
 roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
 print(str(roc_score) + ", " + str(ap_score))

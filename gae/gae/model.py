@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, EuclideanDecoder
+from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -84,8 +84,9 @@ class GCNModelVAE(Model):
         self.features_nonzero = features_nonzero
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
-        self.partials = tf.sparse_reshape(placeholders['partials'], (-1, num_nodes))
+        self.parallel = placeholders['parallel']
         self.dropout = placeholders['dropout']
+        self.adj_label = placeholders['adj_orig']
         self.build()
 
     def encoder(self, inputs):
@@ -141,34 +142,16 @@ class GCNModelVAE(Model):
 
     def decoder(self, z):
 
-        # z = Dense(input_dim=FLAGS.hidden2,
-        #                                   output_dim=FLAGS.hidden3,
-        #                                   dropout=self.dropout,
-        #                                   act=tf.nn.relu,
-        #                                   logging=self.logging)(z)
-        
-        # z = Dense(input_dim=FLAGS.hidden3,
-        #                                   output_dim=FLAGS.hidden4,
-        #                                   dropout=self.dropout,
-        #                                   act=lambda x: x,
-        #                                   bias=True,
-        #                                   logging=self.logging)(z)
+        # reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
+        #                               act=lambda x: x,
+        #                               logging=self.logging)(z)
 
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
+        reconstructions, self.sup = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
+                                      adj = self.adj_label,
+                                      num_nodes = self.n_samples,
+                                      parallel = self.parallel,
                                       logging=self.logging)(z)
-
-        # reconstructions = Dense(input_dim=FLAGS.hidden4,
-        #                                   output_dim=FLAGS.hidden5,
-        #                                   dropout=self.dropout,
-        #                                   act=tf.nn.relu,
-        #                                   logging=self.logging)(reconstructions)
-
-        # reconstructions = Dense(input_dim=FLAGS.hidden4,
-        #                                   output_dim=1,
-        #                                   dropout=self.dropout,
-        #                                   act=lambda x: x,
-        #                                   logging=self.logging)(reconstructions)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
