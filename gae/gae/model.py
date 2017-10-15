@@ -147,7 +147,7 @@ class GCNModelVAE(Model):
         #                               logging=self.logging)(z)
 
         reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
-                                      hidden_dim=FLAGS.hidden2,
+                                      hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
                                       num_nodes = self.n_samples,
