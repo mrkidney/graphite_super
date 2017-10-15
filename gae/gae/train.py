@@ -30,6 +30,7 @@ flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_integer('edge_dropout', 1, 'Dropout for individual edges in training graph')
 flags.DEFINE_integer('symmetric', 1, 'Normalize adjacency matrices symmetrically')
+flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -114,6 +115,7 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg):
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
+    FLAGS.parallel = 0
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):
@@ -159,6 +161,7 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+    FLAGS.parallel = 1
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
     avg_cost = outs[1]
@@ -172,6 +175,7 @@ for epoch in range(FLAGS.epochs):
               "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
               "val_ap=", "{:.5f}".format(ap_curr))
 
-feed_dict.update({placeholders['parallel']: 0.})
+#feed_dict.update({placeholders['parallel']: 0.})
+FLAGS.parallel = 0
 roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
 print(str(roc_score) + ", " + str(ap_score))

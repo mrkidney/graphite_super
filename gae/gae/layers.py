@@ -18,6 +18,10 @@ def get_layer_uid(layer_name=''):
         _LAYER_UIDS[layer_name] += 1
         return _LAYER_UIDS[layer_name]
 
+def dense_tensor_to_sparse(x):
+    idx = tf.where(tf.not_equal(x, 0))
+    # Use tf.shape(a_t, out_type=tf.int64) instead of a_t.get_shape() if tensor shape is dynamic
+    return tf.SparseTensor(idx, tf.gather_nd(x, idx), x.get_shape())
 
 def dropout_sparse(x, keep_prob, num_nonzero_elems):
     """Dropout for sparse tensors. Currently fails for very large sparse tensors (>1M elements)
@@ -100,23 +104,6 @@ class Dense(Layer):
             output += self.vars['bias']
 
         return self.act(output)
-
-class AutoregressiveConfigurer(Layer):
-    """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, partials, dropout=0., act=tf.nn.sigmoid, **kwargs):
-        super(AutoregressiveConfigurer, self).__init__(**kwargs)
-        self.dropout = dropout
-        self.act = act
-        self.input_dim = input_dim
-
-    def _call(self, inputs, partials):
-        num_nodes = int(inputs.get_shape()[0])
-        inputs = tf.nn.dropout(inputs, 1-self.dropout)
-
-        output = sparse_tensor_dense_matmul(partials, inputs)
-        output = tf.reshape(output, [num_nodes*num_nodes, 2, self.input_dim])
-        output = tf.reduce_prod(output, axis = 1)
-        return output
 
 class InnerProductConfigurer(Layer):
     """Decoder model layer for link prediction."""
@@ -203,6 +190,7 @@ class AutoregressiveDecoder(Layer):
 
 
     def _call(self, inputs):
+        adj = self.adj
         z = tf.nn.dropout(inputs, 1-self.dropout)
 
         x = tf.transpose(z)
@@ -213,7 +201,6 @@ class AutoregressiveDecoder(Layer):
         rows = tf.range(num_nodes, dtype = tf.int64)
         rows = tf.stack([rows, rows], axis = 1)
         rows = tf.reshape(rows, [-1, 2])
-        sparse_eye = tf.SparseTensor(rows, tf.ones(num_nodes), [num_nodes, num_nodes])
 
         def sparse_convolution(adj, deg, inputs):
             output = tf.sparse_tensor_dense_matmul(deg, inputs)
@@ -222,9 +209,8 @@ class AutoregressiveDecoder(Layer):
             return output
 
         def z_update(row):
-            partial_adj = tf.sparse_slice(self.adj, [0,0], row)
+            partial_adj = tf.sparse_slice(adj, [0,0], row)
             partial_adj = tf.sparse_reset_shape(partial_adj, [num_nodes, num_nodes])
-            #partial_adj = tf.sparse_maximum(partial_adj, sparse_eye)
             deg = tf.sparse_reduce_sum(partial_adj, 0)
             deg = tf.pow(tf.maximum(deg, 1), -0.5)
             deg = tf.SparseTensor(rows, deg, [num_nodes, num_nodes])
@@ -238,11 +224,25 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.matmul(hidden, self.vars['weights2'])
             return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
 
-        supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
-        supplement = 0.5 * (supplement + tf.transpose(supplement))
+        if FLAGS.parallel:
+            supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
+            supplement = 0.5 * (supplement + tf.transpose(supplement))
+            outputs = x + supplement
+            return outputs
+        else:
+            moving_update = x
+            for i in range(num_nodes):
+                supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))])
+                supplement = tf.reshape(supplement, [num_nodes, num_nodes])
+                supplement = 0.5 * (supplement + tf.transpose(supplement))
 
-        outputs = x + supplement
-        return outputs
+                moving_update += supplement
+                update = tf.sigmoid(moving_update)
+                update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)[0:i, 0:i]
+                update = dense_tensor_to_sparse(update)
+                update = tf.sparse_reset_shape(update, [num_nodes, num_nodes])
+                adj = tf.sparse_maximum(adj, update)
+            return moving_update
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
