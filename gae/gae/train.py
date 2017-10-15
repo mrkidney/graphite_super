@@ -159,12 +159,10 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
     feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl, model.sup], feed_dict=feed_dict)
+    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
     avg_cost = outs[1]
     avg_accuracy = outs[2]
-
-    print(outs[4])
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
     val_roc_score.append(roc_curr)

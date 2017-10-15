@@ -190,7 +190,7 @@ class EuclideanDecoder(Layer):
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, adj, num_nodes, parallel, dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, hidden_dim, adj, num_nodes, parallel, dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
@@ -198,22 +198,22 @@ class AutoregressiveDecoder(Layer):
         self.num_nodes = num_nodes
         self.parallel = parallel
         with tf.variable_scope(self.name + '_vars'):
-            self.vars['weights1'] = weight_variable_glorot(input_dim, input_dim, name="weights1")
-            self.vars['weights2'] = weight_variable_glorot(input_dim, 1, name="weights2")
+            self.vars['weights1'] = weight_variable_glorot(input_dim + 1, hidden_dim, name="weights1")
+            self.vars['weights2'] = weight_variable_glorot(hidden_dim, 1, name="weights2")
 
 
     def _call(self, inputs):
-        adj = self.adj
         z = tf.nn.dropout(inputs, 1-self.dropout)
-        num_nodes = self.num_nodes
-        w1 = self.vars['weights1']
-        w2 = self.vars['weights2']
-        prod = tf.matmul(z, w1)
 
-        rows = tf.range(num_nodes, dtype = tf.float32)
-        rows = tf.tile(rows, [2])
+        x = tf.transpose(z)
+        x = tf.matmul(z, x)
+
+        num_nodes = self.num_nodes
+
+        rows = tf.range(num_nodes, dtype = tf.int64)
+        rows = tf.stack([rows, rows], axis = 1)
         rows = tf.reshape(rows, [-1, 2])
-        indices = tf.cast(rows, tf.int64)
+        sparse_eye = tf.SparseTensor(rows, tf.ones(num_nodes), [num_nodes, num_nodes])
 
         def sparse_convolution(adj, deg, inputs):
             output = tf.sparse_tensor_dense_matmul(deg, inputs)
@@ -222,24 +222,27 @@ class AutoregressiveDecoder(Layer):
             return output
 
         def z_update(row):
-            row = tf.cast(row, tf.int64)
-            partial_adj = tf.sparse_slice(adj, [0,0], row)
+            partial_adj = tf.sparse_slice(self.adj, [0,0], row)
             partial_adj = tf.sparse_reset_shape(partial_adj, [num_nodes, num_nodes])
+            #partial_adj = tf.sparse_maximum(partial_adj, sparse_eye)
             deg = tf.sparse_reduce_sum(partial_adj, 0)
             deg = tf.pow(tf.maximum(deg, 1), -0.5)
-            deg = tf.SparseTensor(indices, deg, [num_nodes, num_nodes])
+            deg = tf.SparseTensor(rows, deg, [num_nodes, num_nodes])
 
-            hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, prod))
-            hidden = tf.matmul(hidden, w2)
-            return sparse_convolution(partial_adj, deg, hidden)
+            helper_feature = tf.one_hot([row[0]], num_nodes)
+            helper_feature = tf.reshape(helper_feature, [num_nodes, 1])
+            z_prime = tf.concat((z, helper_feature), 1)
 
-        supplement = tf.map_fn(z_update, rows)
+            hidden = tf.matmul(z_prime, self.vars['weights1'])
+            hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
+            hidden = tf.matmul(hidden, self.vars['weights2'])
+            return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
 
-        x = tf.transpose(z)
-        x = tf.matmul(z, x)
-        outputs = x
+        supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
+        supplement = 0.5 * (supplement + tf.transpose(supplement))
 
-        return outputs, supplement
+        outputs = x + supplement
+        return outputs
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
