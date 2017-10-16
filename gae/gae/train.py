@@ -24,7 +24,7 @@ flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 500, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 5, 'Number of units in hidden layer 3.')
+flags.DEFINE_integer('hidden3', 7, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
@@ -115,7 +115,7 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg):
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
-    FLAGS.parallel = 0
+    # FLAGS.parallel = 0
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):
