@@ -222,11 +222,11 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.matmul(z_prime, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
             hidden = tf.matmul(hidden, self.vars['weights2'])
-            return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
+            return tf.squeeze(tf.nn.tanh(sparse_convolution(partial_adj, deg, hidden)))
 
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
-            supplement = 0.5 * (supplement + tf.transpose(supplement))
+            supplement = (supplement + tf.transpose(supplement))
             outputs = x + supplement
             return outputs
         else:
@@ -234,7 +234,7 @@ class AutoregressiveDecoder(Layer):
             for i in range(num_nodes):
                 supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))])
                 supplement = tf.reshape(supplement, [num_nodes, num_nodes])
-                supplement = 0.5 * (supplement + tf.transpose(supplement))
+                supplement = (supplement + tf.transpose(supplement))
 
                 moving_update += supplement
                 update = tf.sigmoid(moving_update)
