@@ -115,7 +115,7 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg):
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
-    # FLAGS.parallel = 0
+    FLAGS.parallel = 0
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):

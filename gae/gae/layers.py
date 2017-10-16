@@ -241,7 +241,7 @@ class AutoregressiveDecoder(Layer):
                 update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)[0:i, 0:i]
                 update = dense_tensor_to_sparse(update)
                 update = tf.sparse_reset_shape(update, [num_nodes, num_nodes])
-                adj = tf.sparse_maximum(adj, update)
+                adj = update
             return moving_update
 
 class InnerProductDecoder(Layer):
