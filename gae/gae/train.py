@@ -15,7 +15,7 @@ from sklearn.metrics import average_precision_score
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
 from model import GCNModelAE, GCNModelVAE
-from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, preprocess_partial_graphs
+from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout
 
 # Settings
 flags = tf.app.flags
