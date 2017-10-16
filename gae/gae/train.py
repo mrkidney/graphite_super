@@ -28,7 +28,7 @@ flags.DEFINE_integer('hidden3', 5, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
-flags.DEFINE_float('edge_dropout', 0.05, 'Dropout for individual edges in training graph')
+flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
 flags.DEFINE_integer('symmetric', 1, 'Normalize adjacency matrices symmetrically')
 flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 
