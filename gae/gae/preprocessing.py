@@ -68,6 +68,31 @@ def construct_feed_dict(adj_normalized, adj, features, placeholders):
     feed_dict.update({placeholders['adj_orig']: adj})
     return feed_dict
 
+def edge_dropout(adj, dropout):
+
+    adj = adj - sp.dia_matrix((adj.diagonal()[np.newaxis, :], [0]), shape=adj.shape)
+    adj.eliminate_zeros()
+    assert np.diag(adj.todense()).sum() == 0
+
+    adj_triu = sp.triu(adj)
+    adj_tuple = sparse_to_tuple(adj_triu)
+    edges = adj_tuple[0]
+    num_val = int(np.floor(edges.shape[0] * 1.0 * dropout))
+
+    all_edge_idx = range(edges.shape[0])
+    np.random.shuffle(all_edge_idx)
+    val_edge_idx = all_edge_idx[:num_val]
+    train_edges = np.delete(edges, val_edge_idx, axis=0)
+
+    data = np.ones(train_edges.shape[0])
+
+    # Re-build adj matrix
+    adj_train = sp.csr_matrix((data, (train_edges[:, 0], train_edges[:, 1])), shape=adj.shape)
+    adj_train = adj_train + adj_train.T
+
+    return adj_train
+
+
 def mask_test_edges(adj):
     # Function to build test set with 10% positive links
     # NOTE: Splits are randomized and results might slightly deviate from reported numbers in the paper.

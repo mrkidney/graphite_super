@@ -28,7 +28,7 @@ flags.DEFINE_integer('hidden3', 5, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
 flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
-flags.DEFINE_integer('edge_dropout', 1, 'Dropout for individual edges in training graph')
+flags.DEFINE_float('edge_dropout', 0.05, 'Dropout for individual edges in training graph')
 flags.DEFINE_integer('symmetric', 1, 'Normalize adjacency matrices symmetrically')
 flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 
@@ -152,8 +152,8 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
 
-    if FLAGS.edge_dropout:
-        adj_train_mini, _, _, _, _, _ = mask_test_edges(adj)
+    if FLAGS.edge_dropout > 0:
+        adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
         adj_norm_mini = preprocess_graph(adj_train_mini, FLAGS.symmetric)
     else:
         adj_norm_mini = adj_norm
