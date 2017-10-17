@@ -286,7 +286,8 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = sparse_convolution(partial_adj, deg, hidden)
             index = tf.cast(row[0], tf.int32)
-            return tf.matmul(hidden, tf.transpose(hidden))[index]
+            vec = tf.expand_dims(hidden[index], 1)
+            return tf.squeeze(tf.matmul(hidden, vec))
 
 
         if FLAGS.parallel:
