@@ -166,6 +166,7 @@ class GCNModelVAE(Model):
     def decoder_auto_node(self, z, input_dim):
         reconstructions = AutoregressiveDecoder(input_dim=input_dim,
                                       hidden_dim=FLAGS.hidden3,
+                                      hidden_dim2=FLAGS.hidden4,
                                       act=lambda x: x,
                                       adj = self.adj_label,
                                       num_nodes = self.n_samples,
