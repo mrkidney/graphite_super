@@ -254,7 +254,7 @@ class AutoregressiveDecoder(Layer):
         self.parallel = parallel
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights1'] = weight_variable_glorot(input_dim + 1, hidden_dim, name="weights1")
-            self.vars['weights2'] = weight_variable_glorot(hidden_dim, 1, name="weights2")
+            self.vars['weights2'] = weight_variable_glorot(hidden_dim, hidden_dim, name="weights2")
 
 
     def _call(self, inputs):
@@ -284,7 +284,10 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
             hidden = tf.nn.dropout(hidden, 1-self.dropout)
             hidden = tf.matmul(hidden, self.vars['weights2'])
-            return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
+            hidden = sparse_convolution(partial_adj, deg, hidden)
+            index = tf.cast(row[0], tf.int32)
+            return tf.matmul(hidden, tf.transpose(hidden))[index]
+
 
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
