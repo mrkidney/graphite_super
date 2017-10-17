@@ -40,7 +40,7 @@ flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-flags.DEFINE_integer('verbose', 1, 'Print all epochs')
+flags.DEFINE_integer('verbose', 0, 'Print all epochs')
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
@@ -169,6 +169,9 @@ for epoch in range(FLAGS.epochs):
 
     avg_cost = outs[1]
     avg_accuracy = outs[2]
+
+    if (FLAGS.auto_node or FLAGS.auto_edge) and (epoch + 1) % 100 == 0:
+        continue
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
     val_roc_score.append(roc_curr)
