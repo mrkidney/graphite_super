@@ -163,7 +163,19 @@ class GCNModelVAE(Model):
         return reconstructions
 
     def decoder_auto_node(self, z):
-        reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
+        reconstructions = AutoregressiveDecoder(input_dim=z.get_shape()[1],
+                                      hidden_dim=FLAGS.hidden3,
+                                      act=lambda x: x,
+                                      adj = self.adj_label,
+                                      num_nodes = self.n_samples,
+                                      parallel = self.parallel,
+                                      logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
+    def decoder_auto_edge(self, z):
+        reconstructions = AutoregressiveEdgeDecoder(input_dim=z.get_shape()[1],
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
@@ -185,9 +197,12 @@ class GCNModelVAE(Model):
 
     def _build(self):
 
-        self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
+        if FLAGS.vae:      
+          self.encoder(self.inputs)
+          z = self.get_z(random = True)
+          z_noiseless = self.get_z(random = False)
+        else:
+          z = z_noiseless = self.inputs
 
         if FLAGS.relnet:
           f = self.decoder_relnet

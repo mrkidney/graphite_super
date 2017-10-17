@@ -201,6 +201,7 @@ class AutoregressiveEdgeDecoder(Layer):
 
         def z_update(row):
             partial_adj = tf.sparse_reshape(adj, [-1])
+            index = tf.minimum(row[0] * num_nodes + row[1], row[1] * num_nodes + row[0])
             partial_adj = tf.sparse_slice(adj, [0], row[0] * num_nodes + row[1])
             partial_adj = tf.sparse_reshape(partial_adj, [num_nodes, num_nodes])
             partial_adj = tf.sparse_maximum(partial_adj, tf.sparse_transpose(partial_adj))
@@ -225,16 +226,15 @@ class AutoregressiveEdgeDecoder(Layer):
             supplement = tf.map_fn(z_update, indices, dtype = tf.float32)
             return supplement
         else:
-            moving_update = np.zeros([num_nodes, num_nodes])
+            moving_update = np.zeros([num_nodes, num_nodes]) - 1
             for i in range(num_nodes):
                 for j in range(num_nodes):
-                    moving_update = z_update([i,j])
+                    moving_update[i,j] = moving_update[j,i] = z_update([i,j])
 
-                    moving_update += supplement
-                update = tf.sigmoid(tf.convert_to_tensor(moving_update))
-                update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)
-                update = dense_tensor_to_sparse(update, num_nodes)
-                adj = update
+                    update = tf.sigmoid(tf.convert_to_tensor(moving_update))
+                    update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)
+                    update = dense_tensor_to_sparse(update, num_nodes)
+                    adj = update
             return moving_update
 
 class AutoregressiveDecoder(Layer):
@@ -286,7 +286,7 @@ class AutoregressiveDecoder(Layer):
             return outputs
         else:
             # moving_update = x
-            moving_update = tf.zeros([num_nodes, num_nodes])
+            moving_update = tf.zeros([num_nodes, num_nodes]) - 1
             for i in range(num_nodes):
                 supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))])
                 supplement = tf.reshape(supplement, [num_nodes, num_nodes])
