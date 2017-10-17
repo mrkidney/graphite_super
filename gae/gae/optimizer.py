@@ -38,12 +38,13 @@ class OptimizerVAE(object):
         self.log_lik = self.cost
 
         self.kl = (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_log_std - tf.square(model.z_mean) - tf.square(tf.exp(model.z_log_std)), 1))
-        self.kl += (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_r_log_std - tf.square(model.z_r - 1) - tf.square(tf.exp(model.z_r_log_std)), 1))
+        if FLAGS.sphere_prior:
+            self.kl += (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_r_log_std - tf.square(model.z_r - 1) - tf.square(tf.exp(model.z_r_log_std)), 1))
         self.cost -= self.kl
 
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
-        self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds_sub), 0.5), tf.int32),
+        self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(preds_sub, 0.5), tf.int32),
                                            tf.cast(labels_sub, tf.int32))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))

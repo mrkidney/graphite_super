@@ -48,16 +48,12 @@ def preprocess_partial_graphs(adj):
     partials = sp.csr_matrix((data, (row, col)), shape=(num_nodes*num_nodes, 2*num_nodes))
     return partials
 
-def preprocess_graph(adj, symmetric):
+def preprocess_graph(adj):
     adj = sp.coo_matrix(adj)
     adj_ = adj + sp.eye(adj.shape[0])
     rowsum = np.array(adj_.sum(1))
-    if symmetric:
-        degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
-        adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
-    else:
-        degree_mat_inv = sp.diags(np.power(rowsum, -1).flatten())
-        adj_normalized = degree_mat_inv.dot(adj_).tocoo()
+    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+    adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return sparse_to_tuple(adj_normalized)
 
 def construct_feed_dict(adj_normalized, adj, features, placeholders):

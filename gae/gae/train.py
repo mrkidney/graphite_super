@@ -21,23 +21,25 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 500, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 7, 'Number of units in hidden layer 3.')
-flags.DEFINE_integer('hidden4', 20, 'Number of units in hidden layer 4.')
-flags.DEFINE_integer('hidden5', 20, 'Number of units in hidden layer 5.')
+flags.DEFINE_integer('hidden3', 14, 'Number of units in hidden layer 3.')
+flags.DEFINE_integer('hidden4', 14, 'Number of units in hidden layer 4.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
-flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
+flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
 flags.DEFINE_float('autoregressive_scalar', 0.5, 'Scale down contribution of autoregressive to final link prediction')
-flags.DEFINE_integer('symmetric', 1, 'Normalize adjacency matrices symmetrically')
+flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
+flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
+flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
+flags.DEFINE_integer('auto_edge', 0, '1 for autoregressive by edge')
+
 flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('verbose', 1, 'Print all epochs')
-
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
@@ -56,7 +58,7 @@ adj = adj_train
 if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless
 
-adj_norm = preprocess_graph(adj, FLAGS.symmetric)
+adj_norm = preprocess_graph(adj)
 
 # Define placeholders
 placeholders = {
@@ -115,7 +117,7 @@ acc_val = []
 def get_roc_score(edges_pos, edges_neg):
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
-    # FLAGS.parallel = 0
+    FLAGS.parallel = 0
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
     def sigmoid(x):
@@ -154,7 +156,7 @@ for epoch in range(FLAGS.epochs):
 
     if FLAGS.edge_dropout > 0:
         adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
-        adj_norm_mini = preprocess_graph(adj_train_mini, FLAGS.symmetric)
+        adj_norm_mini = preprocess_graph(adj_train_mini)
     else:
         adj_norm_mini = adj_norm
 
@@ -171,7 +173,7 @@ for epoch in range(FLAGS.epochs):
     val_roc_score.append(roc_curr)
 
     if FLAGS.verbose:
-        print("Epoch:", '%04d' % (epoch + 1), "train_kl=", "{:.5f}".format(outs[3]), "train_loss=", "{:.5f}".format(avg_cost),
+        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
               "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
               "val_ap=", "{:.5f}".format(ap_curr))
 

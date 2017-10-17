@@ -130,22 +130,39 @@ class GCNModelVAE(Model):
     def get_z(self, random):
 
         z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not random:
-          z = self.z_mean
-
         r = self.z_r + tf.random_normal([self.n_samples, 1]) * tf.exp(self.z_r_log_std)
         if not random:
+          z = self.z_mean
           r = self.z_r
 
-        z = tf.nn.l2_normalize(z, dim = 1)
-        return r * z
+        if FLAGS.sphere_prior:
+          z = tf.nn.l2_normalize(z, dim = 1)
+          return r * z
+        else:
+          return z
 
-    def decoder(self, z):
+    def decoder_relnet(self, z):
 
-        # reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-        #                               act=lambda x: x,
-        #                               logging=self.logging)(z)
+        hidden1 = Dense(input_dim=FLAGS.hidden2,
+                                              output_dim=FLAGS.hidden3,
+                                              act=tf.nn.relu,
+                                              dropout=self.dropout,
+                                              logging=self.logging)(z) 
 
+        hidden2 = Dense(input_dim=FLAGS.hidden3,
+                                              output_dim=FLAGS.hidden4,
+                                              act=lambda x: x,
+                                              dropout=self.dropout,
+                                              logging=self.logging)(hidden1) 
+
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
+                                      act=lambda x: x,
+                                      logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
+    def decoder_auto_node(self, z):
         reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
@@ -157,13 +174,30 @@ class GCNModelVAE(Model):
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
+    def decoder(self, z):
+
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
+                                      act=lambda x: x,
+                                      logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
     def _build(self):
 
         self.encoder(self.inputs)
         z = self.get_z(random = True)
-        self.z = z
         z_noiseless = self.get_z(random = False)
 
-        self.reconstructions = self.decoder(z)
-        self.reconstructions_noiseless = self.decoder(z_noiseless)
+        if FLAGS.relnet:
+          f = self.decoder_relnet
+        elif FLAGS.auto_node:
+          f = self.decoder_auto_node
+        elif FLAGS.auto_edge:
+          f = self.decoder_auto_edge
+        else:
+          f = self.decoder
+
+        self.reconstructions = f(z)
+        self.reconstructions_noiseless = f(z_noiseless)
 
