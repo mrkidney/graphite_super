@@ -163,7 +163,7 @@ class GCNModelVAE(Model):
         return reconstructions
 
     def decoder_auto_node(self, z):
-        reconstructions = AutoregressiveDecoder(input_dim=z.get_shape()[1],
+        reconstructions = AutoregressiveDecoder(input_dim=int(z.get_shape()[1]),
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
@@ -175,7 +175,7 @@ class GCNModelVAE(Model):
         return reconstructions
 
     def decoder_auto_edge(self, z):
-        reconstructions = AutoregressiveEdgeDecoder(input_dim=z.get_shape()[1],
+        reconstructions = AutoregressiveEdgeDecoder(input_dim=int(z.get_shape()[1]),
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
