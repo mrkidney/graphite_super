@@ -222,6 +222,7 @@ class AutoregressiveEdgeDecoder(Layer):
 
             hidden = tf.matmul(z_prime, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
+            hidden = tf.nn.dropout(hidden, 1-self.dropout)
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
             row = tf.cast(row, tf.int32)
@@ -281,8 +282,9 @@ class AutoregressiveDecoder(Layer):
 
             hidden = tf.matmul(z_prime, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
+            hidden = tf.nn.dropout(hidden, 1-self.dropout)
             hidden = tf.matmul(hidden, self.vars['weights2'])
-            return FLAGS.autoregressive_scalar * tf.squeeze(tf.nn.tanh(sparse_convolution(partial_adj, deg, hidden)))
+            return tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
 
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
