@@ -36,6 +36,7 @@ flags.DEFINE_integer('auto_node_prior', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('auto_edge', 0, '1 for autoregressive by edge')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('test', 1, 'Number of tests for mean and std')
+flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')
 
 flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
