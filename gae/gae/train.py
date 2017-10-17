@@ -177,7 +177,7 @@ for i in range(FLAGS.test):
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
-        if (FLAGS.auto_node or FLAGS.auto_edge) and (epoch + 1) % 100 != 0:
+        if (FLAGS.auto_node or FLAGS.auto_edge) and (epoch + 1) % 50 != 0:
             continue
 
         roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
