@@ -1,5 +1,6 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
 from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
+from layers import AutoregressiveEdgeDecoder
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -141,7 +142,7 @@ class GCNModelVAE(Model):
         else:
           return z
 
-    def decoder_relnet(self, z):
+    def decoder_relnet(self, z, input_dim):
 
         hidden1 = Dense(input_dim=FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
@@ -162,8 +163,8 @@ class GCNModelVAE(Model):
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-    def decoder_auto_node(self, z):
-        reconstructions = AutoregressiveDecoder(input_dim=int(z.get_shape()[1]),
+    def decoder_auto_node(self, z, input_dim):
+        reconstructions = AutoregressiveDecoder(input_dim=input_dim,
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
@@ -174,8 +175,8 @@ class GCNModelVAE(Model):
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-    def decoder_auto_edge(self, z):
-        reconstructions = AutoregressiveEdgeDecoder(input_dim=int(z.get_shape()[1]),
+    def decoder_auto_edge(self, z, input_dim):
+        reconstructions = AutoregressiveEdgeDecoder(input_dim=input_dim,
                                       hidden_dim=FLAGS.hidden3,
                                       act=lambda x: x,
                                       adj = self.adj_label,
@@ -186,7 +187,7 @@ class GCNModelVAE(Model):
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-    def decoder(self, z):
+    def decoder(self, z, input_dim):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
@@ -201,8 +202,10 @@ class GCNModelVAE(Model):
           self.encoder(self.inputs)
           z = self.get_z(random = True)
           z_noiseless = self.get_z(random = False)
+          input_dim = FLAGS.hidden2
         else:
           z = z_noiseless = self.inputs
+          input_dim = self.input_dim
 
         if FLAGS.relnet:
           f = self.decoder_relnet
@@ -213,6 +216,6 @@ class GCNModelVAE(Model):
         else:
           f = self.decoder
 
-        self.reconstructions = f(z)
-        self.reconstructions_noiseless = f(z_noiseless)
+        self.reconstructions = f(z, input_dim)
+        self.reconstructions_noiseless = f(z_noiseless, input_dim)
 

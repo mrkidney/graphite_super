@@ -175,7 +175,7 @@ class GraphConvolutionSparse(Layer):
 class AutoregressiveEdgeDecoder(Layer):
     """Decoder model layer for link prediction."""
     def __init__(self, input_dim, hidden_dim, adj, num_nodes, parallel, dropout=0., act=tf.nn.sigmoid, **kwargs):
-        super(AutoregressiveDecoder, self).__init__(**kwargs)
+        super(AutoregressiveEdgeDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
         self.adj = adj
@@ -194,16 +194,20 @@ class AutoregressiveEdgeDecoder(Layer):
 
         indices = tf.range(num_nodes, dtype = tf.int64)
         A, B = tf.meshgrid(indices, indices)
-        indices = tf.stack(tf.reshape(B, [-1]), tf.reshape(A, [-1]), axis = 1)
-        eye = sparse_identity(num_nodes)
+        indices = tf.stack((tf.reshape(B, [-1]), tf.reshape(A, [-1])), axis = 1)
 
         rows, eye = sparse_diag(num_nodes)
 
         def z_update(row):
-            partial_adj = tf.sparse_reshape(adj, [-1])
-            index = tf.minimum(row[0] * num_nodes + row[1], row[1] * num_nodes + row[0])
-            partial_adj = tf.sparse_slice(adj, [0], row[0] * num_nodes + row[1])
-            partial_adj = tf.sparse_reshape(partial_adj, [num_nodes, num_nodes])
+            upper = tf.maximum(row[0], row[1])
+            lower = tf.minimum(row[0], row[1])
+            A = tf.sparse_slice(adj, [0,0], [upper,upper])
+            B = tf.sparse_slice(adj, [upper,0], [1, lower])
+            C = tf.sparse_slice(adj, [0,upper], [lower, 1])
+            all_indices = tf.concat([A.indices, B.indices, C.indices], axis = 0)
+            all_values = tf.concat([A.values, B.values, C.values], axis = 0)
+            partial_adj = tf.SparseTensor(all_indices, all_values, [num_nodes, num_nodes])
+
             partial_adj = tf.sparse_maximum(partial_adj, tf.sparse_transpose(partial_adj))
             partial_adj = tf.sparse_maximum(partial_adj, eye)
             deg = tf.sparse_reduce_sum(partial_adj, 0)
@@ -220,15 +224,16 @@ class AutoregressiveEdgeDecoder(Layer):
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
+            row = tf.cast(row, tf.int32)
             return hidden[row[0]] + hidden[row[1]]
 
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, indices, dtype = tf.float32)
             return supplement
         else:
-            moving_update = np.zeros([num_nodes, num_nodes]) - 1
+            moving_update = np.zeros([num_nodes, num_nodes]) - 1.0
             for i in range(num_nodes):
-                for j in range(num_nodes):
+                for j in range(i+1):
                     moving_update[i,j] = moving_update[j,i] = z_update([i,j])
 
                     update = tf.sigmoid(tf.convert_to_tensor(moving_update))
