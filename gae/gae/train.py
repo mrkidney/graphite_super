@@ -191,6 +191,7 @@ for i in range(FLAGS.test):
 
     #feed_dict.update({placeholders['parallel']: 0.})
     FLAGS.parallel = 0
+    FLAGS.auto_dropout = 0.
     roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
     print(str(roc_score) + ", " + str(ap_score))
     sess.close()
