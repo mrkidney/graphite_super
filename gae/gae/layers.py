@@ -294,7 +294,7 @@ class AutoregressivePriorDecoder(Layer):
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
             supplement = (supplement + tf.transpose(supplement))
-            outputs = supplement
+            outputs = x + supplement
             return outputs
         else:
             moving_update = x
