@@ -292,7 +292,7 @@ class AutoregressiveDecoder(Layer):
             vec = tf.expand_dims(hidden[index], 1)
             hidden = tf.squeeze(tf.matmul(hidden, vec))
             hidden = FLAGS.autoregressive_scalar * hidden
-            hidden = tf.concat([hidden[:index + 1], tf.zeros(num_nodes - index - 1)])
+            hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
             return hidden
 
 
@@ -304,7 +304,7 @@ class AutoregressiveDecoder(Layer):
         else:
             moving_update = (1 - FLAGS.autoregressive_scalar) * x
             for i in range(num_nodes):
-                supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))])
+                supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))], 0)
                 supplement = tf.reshape(supplement, [num_nodes, num_nodes])
                 supplement = (supplement + tf.transpose(supplement))
                 supplement = FLAGS.autoregressive_scalar * supplement
@@ -314,7 +314,7 @@ class AutoregressiveDecoder(Layer):
                 update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)
                 # update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)[0:i, 0:i]
                 update = dense_tensor_to_sparse(update, num_nodes)
-                adj = update
+                adj = tf.cast(update, tf.float32)
             return moving_update
 
 class InnerProductDecoder(Layer):
