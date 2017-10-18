@@ -313,8 +313,7 @@ class AutoregressiveDecoder(Layer):
 
                 moving_update += supplement
                 update = tf.sigmoid(moving_update)
-                update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)
-                # update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)[0:i, 0:i]
+                update = tf.cast(tf.greater_equal(update, FLAGS.threshold), tf.int32)
                 update = dense_tensor_to_sparse(update, num_nodes)
                 adj = tf.cast(update, tf.float32)
             return moving_update
