@@ -263,7 +263,7 @@ class AutoregressiveDecoder(Layer):
 
         x = tf.transpose(z)
         x = tf.matmul(z, x)
-        x *= (1 - FLAGS.autoregressive_scalar)
+        x *= (1 - FLAGS.autoregressive_scalar) * FLAGS.sigmoid_scalar
 
         num_nodes = self.num_nodes
 
@@ -294,7 +294,7 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.squeeze(tf.matmul(hidden, vec))
             if not FLAGS.sphere_prior:
                 hidden = tf.nn.tanh(hidden)
-            hidden = hidden * FLAGS.autoregressive_scalar
+            hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
             hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
             return hidden
 
