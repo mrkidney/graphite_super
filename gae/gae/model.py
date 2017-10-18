@@ -154,7 +154,7 @@ class GCNModelRelnet(GCNModelVAE):
 
 class GCNModelAuto(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelRelnet, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
+        super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
         reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,

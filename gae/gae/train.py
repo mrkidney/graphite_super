@@ -36,7 +36,6 @@ flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('test', 1, 'Number of tests for mean and std')
 flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')
 
-flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
@@ -118,7 +117,6 @@ for i in range(FLAGS.test):
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['parallel']: 0.})
-        FLAGS.parallel = 0
         emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
         def sigmoid(x):
@@ -165,7 +163,6 @@ for i in range(FLAGS.test):
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['parallel']: 1.})
-        FLAGS.parallel = 1
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]
@@ -182,8 +179,6 @@ for i in range(FLAGS.test):
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
                   "val_ap=", "{:.5f}".format(ap_curr))
 
-    feed_dict.update({placeholders['parallel']: 0.})
-    FLAGS.parallel = 0
     FLAGS.auto_dropout = 0.
     roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
     print(str(roc_score) + ", " + str(ap_score))
