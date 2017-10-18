@@ -119,8 +119,19 @@ for i in range(FLAGS.test):
         sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
-    cost_val = []
-    acc_val = []
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    def get_tuned_roc_score(edges_pos, edges_neg):
+        if not FLAGS.auto_node:
+            return get_roc_score(edges_pos, edges_neg)
+        scores = []
+        thresholds = [0.5, 0.6, 0.7, 0.8]
+        for i in thresholds:
+            FLAGS.threshold = i
+            scores.append(get_roc_score(edges_pos, edges_neg))
+        print(scores)
+        return max(scores)
 
 
     def get_roc_score(edges_pos, edges_neg):
@@ -130,9 +141,6 @@ for i in range(FLAGS.test):
         # feed_dict.update({placeholders['parallel']: 0.})
         FLAGS.parallel = 0
         emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-
-        def sigmoid(x):
-            return 1 / (1 + np.exp(-x))
 
         adj_rec = np.reshape(recon, (num_nodes, num_nodes))
 
@@ -155,10 +163,6 @@ for i in range(FLAGS.test):
 
         return roc_score, ap_score
 
-    cost_val = []
-    acc_val = []
-    val_roc_score = []
-
     adj_label = adj_train + sp.eye(adj_train.shape[0])
     adj_label = sparse_to_tuple(adj_label)
 
@@ -171,7 +175,6 @@ for i in range(FLAGS.test):
         else:
             adj_norm_mini = adj_norm
 
-        t = time.time()
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
@@ -186,7 +189,6 @@ for i in range(FLAGS.test):
             continue
 
         roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
-        val_roc_score.append(roc_curr)
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),

@@ -66,7 +66,7 @@ class GCNModelVAE(Model):
                                               dropout=self.dropout,
                                               logging=self.logging)(inputs)
 
-        self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
+        self.z_mean = FLAGS.parallel * GraphConvolution(input_dim=FLAGS.hidden1,
                                        output_dim=FLAGS.hidden2,
                                        adj=self.adj,
                                        act=lambda x: x,
