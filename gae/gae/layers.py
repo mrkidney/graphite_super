@@ -291,6 +291,9 @@ class AutoregressiveDecoder(Layer):
             index = tf.cast(row[0], tf.int32)
             vec = tf.expand_dims(hidden[index], 1)
             hidden = tf.squeeze(tf.matmul(hidden, vec))
+            if not FLAGS.sphere_prior:
+                hidden = tf.nn.tanh(hidden)
+            hidden = hidden * FLAGS.autoregressive_scalar
             hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
             return hidden
 

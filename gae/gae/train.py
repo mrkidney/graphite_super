@@ -173,11 +173,11 @@ for i in range(FLAGS.test):
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
-        roc_curr = -1
-        ap_curr = -1
-        if not FLAGS.auto_node or (epoch + 1) % 50 == 0:
-            roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
-            val_roc_score.append(roc_curr)
+        if FLAGS.auto_node and (epoch + 1) % 50 != 0:
+            continue
+
+        roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
+        val_roc_score.append(roc_curr)
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
