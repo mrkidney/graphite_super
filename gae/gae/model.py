@@ -52,6 +52,7 @@ class GCNModelVAE(Model):
         self.adj = placeholders['adj']
         self.parallel = placeholders['parallel']
         self.dropout = placeholders['dropout']
+        self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
         self.build()
 
@@ -163,6 +164,7 @@ class GCNModelAuto(GCNModelVAE):
                                       act=lambda x: x,
                                       adj = self.adj_label,
                                       num_nodes = self.n_samples,
+                                      auto_dropout = self.auto_dropout,
                                       parallel = self.parallel,
                                       logging=self.logging)(z)
 

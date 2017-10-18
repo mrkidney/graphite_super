@@ -244,12 +244,13 @@ class AutoregressiveEdgeDecoder(Layer):
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, hidden_dim, hidden_dim2, adj, num_nodes, parallel, dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, hidden_dim, hidden_dim2, adj, num_nodes, parallel, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
         self.adj = adj
         self.num_nodes = num_nodes
+        self.auto_dropout = auto_dropout
         self.parallel = parallel
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights1'] = weight_variable_glorot(input_dim + 1, hidden_dim, name="weights1")
@@ -282,7 +283,7 @@ class AutoregressiveDecoder(Layer):
 
             hidden = tf.matmul(z_prime, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
-            hidden = tf.nn.dropout(hidden, 1-FLAGS.auto_dropout)
+            hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = sparse_convolution(partial_adj, deg, hidden)
 

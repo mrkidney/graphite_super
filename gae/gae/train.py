@@ -41,6 +41,10 @@ flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('verbose', 0, 'Print all epochs')
+flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
+
+if FLAGS.seeded:
+    np.random.seed(1)
 
 dataset_str = FLAGS.dataset
 
@@ -77,6 +81,7 @@ for i in range(FLAGS.test):
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
+        'auto_dropout': tf.placeholder_with_default(0., shape=()),
         'parallel': tf.placeholder_with_default(1., shape=())
     }
 
@@ -119,7 +124,8 @@ for i in range(FLAGS.test):
     def get_roc_score(edges_pos, edges_neg):
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
-        feed_dict.update({placeholders['parallel']: 0.})
+        feed_dict.update({placeholders['auto_dropout']: 0.})
+        # feed_dict.update({placeholders['parallel']: 0.})
         FLAGS.parallel = 0
         emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
@@ -166,7 +172,8 @@ for i in range(FLAGS.test):
         t = time.time()
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-        feed_dict.update({placeholders['parallel']: 1.})
+        feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
+        # feed_dict.update({placeholders['parallel']: 1.})
         FLAGS.parallel = 1
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
@@ -184,7 +191,6 @@ for i in range(FLAGS.test):
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
                   "val_ap=", "{:.5f}".format(ap_curr))
 
-    FLAGS.auto_dropout = 0.
     roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
     print(str(roc_score) + ", " + str(ap_score))
     sess.close()
