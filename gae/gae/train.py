@@ -32,7 +32,6 @@ flags.DEFINE_float('autoregressive_scalar', 0.5, 'Scale down contribution of aut
 flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
-flags.DEFINE_integer('auto_edge', 0, '1 for autoregressive by edge')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('test', 1, 'Number of tests for mean and std')
 flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')

@@ -209,8 +209,6 @@ class GCNModelVAE(Model):
           f = self.decoder_relnet
         elif FLAGS.auto_node:
           f = self.decoder_auto_node
-        elif FLAGS.auto_edge:
-          f = self.decoder_auto_edge
         else:
           f = self.decoder
 
