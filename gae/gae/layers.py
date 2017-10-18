@@ -263,6 +263,7 @@ class AutoregressiveDecoder(Layer):
 
         x = tf.transpose(z)
         x = tf.matmul(z, x)
+        x *= (1 - FLAGS.autoregressive_scalar)
 
         num_nodes = self.num_nodes
 
@@ -291,7 +292,6 @@ class AutoregressiveDecoder(Layer):
             index = tf.cast(row[0], tf.int32)
             vec = tf.expand_dims(hidden[index], 1)
             hidden = tf.squeeze(tf.matmul(hidden, vec))
-            hidden = FLAGS.autoregressive_scalar * hidden
             hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
             return hidden
 
@@ -299,15 +299,14 @@ class AutoregressiveDecoder(Layer):
         if FLAGS.parallel:
             supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
             supplement = (supplement + tf.transpose(supplement))
-            outputs = (1 - FLAGS.autoregressive_scalar) * x + FLAGS.autoregressive_scalar * supplement
+            outputs = x + supplement
             return outputs
         else:
-            moving_update = (1 - FLAGS.autoregressive_scalar) * x
+            moving_update = x
             for i in range(num_nodes):
                 supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))], 0)
                 supplement = tf.reshape(supplement, [num_nodes, num_nodes])
                 supplement = (supplement + tf.transpose(supplement))
-                supplement = FLAGS.autoregressive_scalar * supplement
 
                 moving_update += supplement
                 update = tf.sigmoid(moving_update)
