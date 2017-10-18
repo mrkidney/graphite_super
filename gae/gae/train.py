@@ -14,7 +14,7 @@ from sklearn.metrics import average_precision_score
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelAE, GCNModelVAE
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout
 
 # Settings
@@ -37,13 +37,11 @@ flags.DEFINE_integer('test', 1, 'Number of tests for mean and std')
 flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')
 
 flags.DEFINE_integer('parallel', 1, 'Internal use, dont mess with')
-flags.DEFINE_string('model', 'gcn_vae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('verbose', 0, 'Print all epochs')
 
-model_str = FLAGS.model
 dataset_str = FLAGS.dataset
 
 # Load data
@@ -84,9 +82,11 @@ for i in range(FLAGS.test):
 
     # Create model
     model = None
-    if model_str == 'gcn_ae':
-        model = GCNModelAE(placeholders, num_features, features_nonzero)
-    elif model_str == 'gcn_vae':
+    if FLAGS.relnet:
+        model = GCNModelRelnet(placeholders, num_features, num_nodes, features_nonzero)
+    elif FLAGS.auto_node:
+        model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
+    else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
@@ -94,19 +94,12 @@ for i in range(FLAGS.test):
 
     # Optimizer
     with tf.name_scope('optimizer'):
-        if model_str == 'gcn_ae':
-            opt = OptimizerAE(preds=model.reconstructions,
-                              labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'],
-                                                                          validate_indices=False), [-1]),
-                              pos_weight=pos_weight,
-                              norm=norm)
-        elif model_str == 'gcn_vae':
-            opt = OptimizerVAE(preds=model.reconstructions,
-                               labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'],
-                                                                           validate_indices=False), [-1]),
-                               model=model, num_nodes=num_nodes,
-                               pos_weight=pos_weight,
-                               norm=norm)
+        opt = OptimizerVAE(preds=model.reconstructions,
+                           labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'],
+                                                                       validate_indices=False), [-1]),
+                           model=model, num_nodes=num_nodes,
+                           pos_weight=pos_weight,
+                           norm=norm)
 
     os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
     if FLAGS.gpu == -1:

@@ -41,41 +41,6 @@ class Model(object):
     def predict(self):
         pass
 
-
-class GCNModelAE(Model):
-    def __init__(self, placeholders, num_features, features_nonzero, **kwargs):
-        super(GCNModelAE, self).__init__(**kwargs)
-
-        self.inputs = placeholders['features']
-        self.input_dim = num_features
-        self.features_nonzero = features_nonzero
-        self.adj = placeholders['adj']
-        self.dropout = placeholders['dropout']
-        self.build()
-
-    def _build(self):
-        self.hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden1,
-                                              adj=self.adj,
-                                              features_nonzero=self.features_nonzero,
-                                              act=tf.nn.relu,
-                                              dropout=self.dropout,
-                                              logging=self.logging)(self.inputs)
-
-        self.embeddings = GraphConvolution(input_dim=FLAGS.hidden1,
-                                           output_dim=FLAGS.hidden2,
-                                           adj=self.adj,
-                                           act=lambda x: x,
-                                           dropout=self.dropout,
-                                           logging=self.logging)(self.hidden1)
-
-        self.z_mean = self.embeddings
-
-        self.reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(self.embeddings)
-
-
 class GCNModelVAE(Model):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
@@ -142,7 +107,31 @@ class GCNModelVAE(Model):
         else:
           return z
 
-    def decoder_relnet(self, z):
+    def decoder(self, z):
+
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
+                                      act=lambda x: x,
+                                      logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
+    def _build(self):
+  
+        self.encoder(self.inputs)
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
+        if not FLAGS.vae:
+          z = z_noiseless
+
+        self.reconstructions = self.decoder(z)
+        self.reconstructions_noiseless = self.decoder(z_noiseless)
+
+class GCNModelRelnet(GCNModelVAE):
+    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
+        super(GCNModelRelnet, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
+
+    def decoder(self, z):
 
         hidden1 = Dense(input_dim=FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
@@ -163,7 +152,11 @@ class GCNModelVAE(Model):
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-    def decoder_auto_node(self, z):
+class GCNModelAuto(GCNModelVAE):
+    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
+        super(GCNModelRelnet, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
+
+    def decoder(self, z):
         reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
                                       hidden_dim=FLAGS.hidden3,
                                       hidden_dim2=FLAGS.hidden4,
@@ -175,43 +168,3 @@ class GCNModelVAE(Model):
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
-
-    def decoder_auto_edge(self, z):
-        reconstructions = AutoregressiveEdgeDecoder(input_dim=FLAGS.hidden2,
-                                      hidden_dim=FLAGS.hidden3,
-                                      act=lambda x: x,
-                                      adj = self.adj_label,
-                                      num_nodes = self.n_samples,
-                                      parallel = self.parallel,
-                                      logging=self.logging)(z)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
-    def decoder(self, z):
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(z)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
-    def _build(self):
-  
-        self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
-        if not FLAGS.vae:
-          z = z_noiseless
-
-        if FLAGS.relnet:
-          f = self.decoder_relnet
-        elif FLAGS.auto_node:
-          f = self.decoder_auto_node
-        else:
-          f = self.decoder
-
-        self.reconstructions = f(z)
-        self.reconstructions_noiseless = f(z_noiseless)
-
