@@ -49,7 +49,6 @@ class GCNModelVAE(Model):
         self.features_nonzero = features_nonzero
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
-        self.parallel = placeholders['parallel']
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
@@ -146,7 +145,6 @@ class GCNModelAuto(GCNModelVAE):
                                       adj = self.adj_label,
                                       num_nodes = self.n_samples,
                                       auto_dropout = self.auto_dropout,
-                                      parallel = self.parallel,
                                       logging=self.logging)
 
         reconstructions = self.decode(z)

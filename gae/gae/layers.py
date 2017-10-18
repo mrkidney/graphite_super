@@ -158,7 +158,7 @@ class GraphConvolutionSparse(Layer):
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, hidden_dim, hidden_dim2, adj, num_nodes, parallel, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, hidden_dim, hidden_dim2, adj, num_nodes, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
