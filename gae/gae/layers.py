@@ -271,7 +271,7 @@ class AutoregressiveDecoder(Layer):
         def z_update(row):
             partial_adj = tf.sparse_slice(adj, [0,0], row)
             partial_adj = tf.sparse_reset_shape(partial_adj, [num_nodes, num_nodes])
-            partial_adj = tf.sparse_maximum(partial_adj, eye)
+            # partial_adj = tf.sparse_maximum(partial_adj, eye)
             deg = tf.sparse_reduce_sum(partial_adj, 0)
             deg = tf.pow(tf.maximum(deg, 1), -0.5)
             deg = tf.SparseTensor(rows, deg, [num_nodes, num_nodes])
@@ -282,16 +282,16 @@ class AutoregressiveDecoder(Layer):
 
             hidden = tf.matmul(z_prime, self.vars['weights1'])
             hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
-            hidden = tf.nn.dropout(hidden, 1-FLAGS.auto_dropout)
+            # hidden = tf.nn.dropout(hidden, 1-FLAGS.auto_dropout)
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = sparse_convolution(partial_adj, deg, hidden)
 
-            if FLAGS.sphere_prior:
-                hidden = tf.nn.l2_normalize(hidden, dim = 1)
+            # if FLAGS.sphere_prior:
+            #     hidden = tf.nn.l2_normalize(hidden, dim = 1)
             index = tf.cast(row[0], tf.int32)
             vec = tf.expand_dims(hidden[index], 1)
             hidden = tf.squeeze(tf.matmul(hidden, vec))
-            hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
+            #hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
             return hidden
 
 
