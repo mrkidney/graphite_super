@@ -1,6 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import InnerProductConfigurer, Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
-from layers import AutoregressiveEdgeDecoder
+from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -66,7 +65,7 @@ class GCNModelVAE(Model):
                                               dropout=self.dropout,
                                               logging=self.logging)(inputs)
 
-        self.z_mean = FLAGS.parallel * GraphConvolution(input_dim=FLAGS.hidden1,
+        self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
                                        output_dim=FLAGS.hidden2,
                                        adj=self.adj,
                                        act=lambda x: x,
@@ -80,33 +79,15 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-        self.z_r = GraphConvolution(input_dim=FLAGS.hidden1,
-                                          output_dim=1,
-                                          adj=self.adj,
-                                          act=lambda x: x,
-                                          dropout=self.dropout,
-                                          logging=self.logging)(hidden1)
-
-        self.z_r_log_std = GraphConvolution(input_dim=FLAGS.hidden1,
-                                          output_dim=1,
-                                          adj=self.adj,
-                                          act=lambda x: x,
-                                          dropout=self.dropout,
-                                          logging=self.logging)(hidden1)
-
     def get_z(self, random):
 
         z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        # r = self.z_r + tf.random_normal([self.n_samples, 1]) * tf.exp(self.z_r_log_std)
         if not random:
           z = self.z_mean
-          # r = self.z_r
 
         if FLAGS.sphere_prior:
           z = tf.nn.l2_normalize(z, dim = 1)
-          return z
-        else:
-          return z
+        return z
 
     def decoder(self, z):
 
@@ -158,7 +139,7 @@ class GCNModelAuto(GCNModelVAE):
         super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        reconstructions = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
+        self.decode = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
                                       hidden_dim=FLAGS.hidden3,
                                       hidden_dim2=FLAGS.hidden4,
                                       act=lambda x: x,
@@ -166,7 +147,19 @@ class GCNModelAuto(GCNModelVAE):
                                       num_nodes = self.n_samples,
                                       auto_dropout = self.auto_dropout,
                                       parallel = self.parallel,
-                                      logging=self.logging)(z)
+                                      logging=self.logging)
+
+        reconstructions = self.decode(z)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
+
+    def _build(self):
+  
+        self.encoder(self.inputs)
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
+        if not FLAGS.vae:
+          z = z_noiseless
+
+        self.reconstructions = self.decoder(z)

@@ -11,6 +11,7 @@ import scipy.sparse as sp
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
+from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
@@ -30,15 +31,14 @@ flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
 flags.DEFINE_float('autoregressive_scalar', 0.5, 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_float('sigmoid_scalar', 1., 'Scale up inner product before taking sigmoid prediction')
-flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
+flags.DEFINE_integer('sphere_prior', 1, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('test', 1, 'Number of tests for mean and std')
 flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')
-flags.DEFINE_float('threshold', 0.51, 'Threshold for autoregressive graph prediction')
+flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
-flags.DEFINE_integer('parallel', 1, 'Internal bullshit')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
@@ -75,8 +75,6 @@ for i in range(FLAGS.test):
 
     adj_norm = preprocess_graph(adj)
 
-    FLAGS.parallel = 1
-
     # Define placeholders
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
@@ -84,7 +82,6 @@ for i in range(FLAGS.test):
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
-        'parallel': tf.placeholder_with_default(1., shape=())
     }
 
     num_nodes = adj.shape[0]
@@ -119,30 +116,78 @@ for i in range(FLAGS.test):
         sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
+
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
+    def relu(x):
+        return np.maximum(x, 0)
+    def cast(x):
+        y = np.zeros_like(x)
+        y[x < FLAGS.threshold] = 0
+        y[x > FLAGS.threshold] = 1
+        return y
 
-    def get_tuned_roc_score(edges_pos, edges_neg):
+
+    def reconstruct():
         if not FLAGS.auto_node:
-            return get_roc_score(edges_pos, edges_neg)
-        scores = []
-        thresholds = [0.5, 0.6, 0.7, 0.8]
-        for i in thresholds:
-            FLAGS.threshold = i
-            scores.append(get_roc_score(edges_pos, edges_neg))
-        print(scores)
-        return max(scores)
+            recon = sess.run([model.reconstructions_noiseless], feed_dict=feed_dict)
+            return np.reshape(recon, (num_nodes, num_nodes))
+
+        emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
+
+        z = normalize(emb)
+        x = np.dot(z, z.T)
+        x *= (1 - FLAGS.autoregressive_scalar) * FLAGS.sigmoid_scalar
+        partial_adj = sp.coo_matrix((num_nodes, num_nodes))
+
+        def z_update(row):
+            partial_norm = preprocess_graph(partial_adj)
+
+            helper_feature = np.zeros((num_nodes, 1))
+            helper_feature[row, 0] = 1
+            z_prime = np.hstack((z, helper_feature))
+
+            hidden = np.dot(z_prime, w1)
+            hidden = relu(partial_adj.dot(hidden))
+            hidden = np.dot(hidden, w2)
+            hidden = relu(partial_adj.dot(hidden))
+
+            if FLAGS.sphere_prior:
+                hidden = normalize(hidden)
+            hidden = np.dot(hidden, hidden[row])
+
+            hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
+            if not FLAGS.sphere_prior:
+                hidden = np.tanh(hidden)
+            hidden[row:] = 0
+            return hidden
+
+        moving_update = x
+        update = np.zeros((num_nodes, num_nodes))
+        for row in range(num_nodes):
+            supplement = z_update(row)
+            moving_update[row,:] += supplement
+            moving_update[:,row] += supplement
+            partial_adj = partial_adj.tolil()
+            partial_adj[row,:] = cast(sigmoid(moving_update[row,:]))
+            partial_adj[:,row] = np.matrix(cast(sigmoid(moving_update[:,row]))).transpose()
+        return moving_update
+
+
+
+
+
+
+
+
 
 
     def get_roc_score(edges_pos, edges_neg):
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
-        # feed_dict.update({placeholders['parallel']: 0.})
-        FLAGS.parallel = 0
-        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
-        adj_rec = np.reshape(recon, (num_nodes, num_nodes))
+        adj_rec = reconstruct()
 
         preds = []
         pos = []
@@ -178,8 +223,6 @@ for i in range(FLAGS.test):
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        # feed_dict.update({placeholders['parallel']: 1.})
-        FLAGS.parallel = 1
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]

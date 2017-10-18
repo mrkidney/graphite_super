@@ -117,21 +117,6 @@ class Dense(Layer):
 
         return self.act(output)
 
-class InnerProductConfigurer(Layer):
-    """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
-        super(InnerProductConfigurer, self).__init__(**kwargs)
-        self.dropout = dropout
-        self.act = act
-        self.input_dim = input_dim
-
-    def _call(self, inputs):
-        inputs = tf.nn.dropout(inputs, 1-self.dropout)
-
-        output = tf.expand_dims(inputs, 0) * tf.expand_dims(inputs, 1)
-        output = tf.reshape(output, [-1, self.input_dim])
-        return output
-
 class GraphConvolution(Layer):
     """Basic graph convolution layer for undirected graph without edge labels."""
     def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu, **kwargs):
@@ -170,77 +155,6 @@ class GraphConvolutionSparse(Layer):
         x = tf.sparse_tensor_dense_matmul(self.adj, x)
         outputs = self.act(x)
         return outputs
-
-class AutoregressiveEdgeDecoder(Layer):
-    """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, hidden_dim, adj, num_nodes, parallel, dropout=0., act=tf.nn.sigmoid, **kwargs):
-        super(AutoregressiveEdgeDecoder, self).__init__(**kwargs)
-        self.dropout = dropout
-        self.act = act
-        self.adj = adj
-        self.num_nodes = num_nodes
-        self.parallel = parallel
-        with tf.variable_scope(self.name + '_vars'):
-            self.vars['weights1'] = weight_variable_glorot(input_dim + 2, hidden_dim, name="weights1")
-            self.vars['weights2'] = weight_variable_glorot(hidden_dim, 1, name="weights2")
-
-
-    def _call(self, inputs):
-        adj = self.adj
-        z = tf.nn.dropout(inputs, 1-self.dropout)
-
-        num_nodes = self.num_nodes
-
-        indices = tf.range(num_nodes, dtype = tf.int64)
-        A, B = tf.meshgrid(indices, indices)
-        indices = tf.stack((tf.reshape(B, [-1]), tf.reshape(A, [-1])), axis = 1)
-
-        rows, eye = sparse_diag(num_nodes)
-
-        def z_update(row):
-            upper = tf.maximum(row[0], row[1])
-            lower = tf.minimum(row[0], row[1])
-            A = tf.sparse_slice(adj, [0,0], [upper,upper])
-            B = tf.sparse_slice(adj, [upper,0], [1, lower])
-            C = tf.sparse_slice(adj, [0,upper], [lower, 1])
-            all_indices = tf.concat([A.indices, B.indices, C.indices], axis = 0)
-            all_values = tf.concat([A.values, B.values, C.values], axis = 0)
-            partial_adj = tf.SparseTensor(all_indices, all_values, [num_nodes, num_nodes])
-
-            partial_adj = tf.sparse_maximum(partial_adj, tf.sparse_transpose(partial_adj))
-            partial_adj = tf.sparse_maximum(partial_adj, eye)
-            deg = tf.sparse_reduce_sum(partial_adj, 0)
-            deg = tf.pow(tf.maximum(deg, 1), -0.5)
-            deg = tf.SparseTensor(rows, deg, [num_nodes, num_nodes])
-
-            helper_feature_r = tf.one_hot([row[0]], num_nodes)
-            helper_feature_r = tf.reshape(helper_feature_r, [num_nodes, 1])
-            helper_feature_c = tf.one_hot([row[1]], num_nodes)
-            helper_feature_c = tf.reshape(helper_feature_c, [num_nodes, 1])
-            z_prime = tf.concat((z, helper_feature_r, helper_feature_c), 1)
-
-            hidden = tf.matmul(z_prime, self.vars['weights1'])
-            hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
-            hidden = tf.nn.dropout(hidden, 1-self.dropout)
-            hidden = tf.matmul(hidden, self.vars['weights2'])
-            hidden = tf.squeeze(sparse_convolution(partial_adj, deg, hidden))
-            row = tf.cast(row, tf.int32)
-            return hidden[row[0]] + hidden[row[1]]
-
-        if FLAGS.parallel:
-            supplement = tf.map_fn(z_update, indices, dtype = tf.float32)
-            return supplement
-        else:
-            moving_update = np.zeros([num_nodes, num_nodes]) - 1.0
-            for i in range(num_nodes):
-                for j in range(i+1):
-                    moving_update[i,j] = moving_update[j,i] = z_update([i,j])
-
-                    update = tf.sigmoid(tf.convert_to_tensor(moving_update))
-                    update = tf.cast(tf.greater_equal(update, 0.51), tf.int32)
-                    update = dense_tensor_to_sparse(update, num_nodes)
-                    adj = update
-            return moving_update
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
@@ -299,30 +213,10 @@ class AutoregressiveDecoder(Layer):
             return hidden
 
 
-        def parallel_update():
-            supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 1000)
-            supplement = (supplement + tf.transpose(supplement))
-            outputs = x + supplement
-            return outputs
-        def sequential_update():
-            moving_update = x
-            for i in range(num_nodes):
-                supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))], 0)
-                supplement = tf.reshape(supplement, [num_nodes, num_nodes])
-                supplement = (supplement + tf.transpose(supplement))
-
-                moving_update += supplement
-                update = tf.sigmoid(moving_update)
-                update = tf.cast(tf.greater_equal(update, FLAGS.threshold), tf.int32)
-                update = dense_tensor_to_sparse(update, num_nodes)
-                adj = tf.cast(update, tf.float32)
-            return moving_update
-
-        if FLAGS.parallel:
-            return parallel_update()
-        else:
-            return sequential_update()
-        #return tf.cond(tf.equal(self.parallel, 1.), parallel_update, sequential_update)
+        supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 1000)
+        supplement = (supplement + tf.transpose(supplement))
+        outputs = x + supplement
+        return outputs
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
