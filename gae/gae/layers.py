@@ -315,7 +315,8 @@ class AutoregressiveDecoder(Layer):
                 adj = tf.cast(update, tf.float32)
             return moving_update
 
-        return tf.cond(tf.equal(self.parallel, 1.), parallel_update, sequential_update)
+        return parallel_update()
+        #return tf.cond(tf.equal(self.parallel, 1.), parallel_update, sequential_update)
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
