@@ -125,6 +125,7 @@ for i in range(FLAGS.test):
     def get_roc_score(edges_pos, edges_neg):
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
+        feed_dict.update({placeholders['parallel']: 0.})
         FLAGS.parallel = 0
         emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
 
@@ -171,24 +172,25 @@ for i in range(FLAGS.test):
         t = time.time()
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+        feed_dict.update({placeholders['parallel']: 1.})
         FLAGS.parallel = 1
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
-        if (FLAGS.auto_node or FLAGS.auto_edge) and (epoch + 1) % 50 != 0:
-            continue
-
-        roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
-        val_roc_score.append(roc_curr)
+        roc_curr = -1
+        ap_curr = -1
+        if not FLAGS.auto_node or (epoch + 1) % 50 == 0:
+            roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
+            val_roc_score.append(roc_curr)
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
                   "val_ap=", "{:.5f}".format(ap_curr))
 
-    #feed_dict.update({placeholders['parallel']: 0.})
+    feed_dict.update({placeholders['parallel']: 0.})
     FLAGS.parallel = 0
     FLAGS.auto_dropout = 0.
     roc_score, ap_score = get_roc_score(test_edges, test_edges_false)

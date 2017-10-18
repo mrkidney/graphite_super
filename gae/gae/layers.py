@@ -20,7 +20,6 @@ def get_layer_uid(layer_name=''):
 
 def dense_tensor_to_sparse(x, num_nodes):
     idx = tf.where(tf.not_equal(x, 0))
-    # Use tf.shape(a_t, out_type=tf.int64) instead of a_t.get_shape() if tensor shape is dynamic
     return tf.SparseTensor(idx, tf.gather_nd(x, idx), [num_nodes, num_nodes])
 
 def sparse_convolution(adj, deg, inputs):
@@ -296,12 +295,12 @@ class AutoregressiveDecoder(Layer):
             return hidden
 
 
-        if FLAGS.parallel:
-            supplement = tf.map_fn(z_update, rows, dtype = tf.float32)
+        def parallel_update():
+            supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 1000)
             supplement = (supplement + tf.transpose(supplement))
             outputs = x + supplement
             return outputs
-        else:
+        def sequential_update():
             moving_update = x
             for i in range(num_nodes):
                 supplement = tf.concat([tf.zeros(num_nodes * i), z_update(rows[i]), tf.zeros(num_nodes * (num_nodes - i - 1))], 0)
@@ -315,6 +314,8 @@ class AutoregressiveDecoder(Layer):
                 update = dense_tensor_to_sparse(update, num_nodes)
                 adj = tf.cast(update, tf.float32)
             return moving_update
+
+        return tf.cond(tf.equal(self.parallel, 1.), parallel_update, sequential_update)
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
