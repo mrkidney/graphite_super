@@ -286,12 +286,12 @@ class AutoregressiveDecoder(Layer):
             hidden = tf.matmul(hidden, self.vars['weights2'])
             hidden = sparse_convolution(partial_adj, deg, hidden)
 
+            if FLAGS.sphere_prior:
+                hidden = tf.nn.l2_normalize(hidden, dim = 1)
             index = tf.cast(row[0], tf.int32)
             vec = tf.expand_dims(hidden[index], 1)
             hidden = tf.squeeze(tf.matmul(hidden, vec))
             if FLAGS.auto_node_prior:
-                hidden = tf.nn.tanh(hidden)
-                hidden = tf.nn.dropout(hidden, 1-FLAGS.auto_dropout)
                 hidden = FLAGS.autoregressive_scalar * hidden
             return hidden
 
