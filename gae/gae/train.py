@@ -119,21 +119,10 @@ def relu(x):
 def cast(x):
     y = np.zeros_like(x)
     y[x < FLAGS.threshold] = 0
-    y[x > FLAGS.threshold] = 1
+    y[x >= FLAGS.threshold] = 1
     return y
 
-
-def reconstruct():
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    feed_dict.update({placeholders['auto_dropout']: 0.})
-
-    if not FLAGS.auto_node:
-        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-        return np.reshape(recon, (num_nodes, num_nodes))
-
-    emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
-
+def auto_build(emb, w1, w2):
     z = normalize(emb)
     x = np.dot(z, z.T)
     x *= (1 - FLAGS.autoregressive_scalar) * FLAGS.sigmoid_scalar
@@ -172,6 +161,17 @@ def reconstruct():
         partial_adj[:row,row] = np.matrix(cast(sigmoid(moving_update[:row,row]))).transpose()
     return moving_update
 
+def reconstruct():
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict.update({placeholders['dropout']: 0.})
+    feed_dict.update({placeholders['auto_dropout']: 0.})
+
+    if not FLAGS.auto_node:
+        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+        return np.reshape(recon, (num_nodes, num_nodes))
+
+    emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
+    return auto_build(emb, w1, w2)
 
 
 
@@ -181,9 +181,11 @@ def reconstruct():
 
 
 
-def get_roc_score(edges_pos, edges_neg):
 
-    adj_rec = reconstruct()
+def get_roc_score(edges_pos, edges_neg, adj_rec = None):
+
+    if adj_rec = None:
+        adj_rec = reconstruct()
 
     preds = []
     pos = []
@@ -232,9 +234,16 @@ for epoch in range(FLAGS.epochs):
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
           "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
           "val_ap=", "{:.5f}".format(ap_curr))
+
+
+feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+feed_dict.update({placeholders['dropout']: 0.})
+feed_dict.update({placeholders['auto_dropout']: 0.})
+emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
+
 for i in np.arange(0.5, 0.8, 0.02):
-    print(i)
     FLAGS.threshold = i
-    roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
-    print(str(roc_score) + ", " + str(ap_score))
+    adj_rec = auto_build(emb, w1, w2)
+    roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_rec)
+    print(str(i) + ", " + str(roc_score) + ", " + str(ap_score))
 sess.close()
