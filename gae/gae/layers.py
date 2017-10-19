@@ -212,7 +212,7 @@ class AutoregressiveDecoder(Layer):
             return hidden
 
 
-        supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 1000)
+        supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 100)
         supplement = (supplement + tf.transpose(supplement))
         outputs = x + supplement
         return outputs

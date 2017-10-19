@@ -41,7 +41,6 @@ flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph predic
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-flags.DEFINE_integer('verbose', 1, 'Print all epochs')
 flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
 
 if FLAGS.seeded:
@@ -125,8 +124,12 @@ def cast(x):
 
 
 def reconstruct():
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict.update({placeholders['dropout']: 0.})
+    feed_dict.update({placeholders['auto_dropout']: 0.})
+
     if not FLAGS.auto_node:
-        recon = sess.run([model.reconstructions_noiseless], feed_dict=feed_dict)
+        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
         return np.reshape(recon, (num_nodes, num_nodes))
 
     emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
@@ -180,9 +183,6 @@ def reconstruct():
 
 
 def get_roc_score(edges_pos, edges_neg):
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    feed_dict.update({placeholders['auto_dropout']: 0.})
 
     adj_rec = reconstruct()
 
@@ -231,10 +231,9 @@ for epoch in range(FLAGS.epochs):
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
 
-    if FLAGS.verbose:
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-              "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
-              "val_ap=", "{:.5f}".format(ap_curr))
+    print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
+          "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
+          "val_ap=", "{:.5f}".format(ap_curr))
 
 roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
 print(str(roc_score) + ", " + str(ap_score))
