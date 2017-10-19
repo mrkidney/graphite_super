@@ -210,8 +210,6 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
     print(epoch)
-    reconstruct()
-    sys.exit()
 
     if FLAGS.edge_dropout > 0:
         adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
