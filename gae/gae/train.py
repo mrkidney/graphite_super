@@ -162,8 +162,17 @@ def auto_build(emb, w1, w2):
     return moving_update
 
 
+def reconstruct():
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict.update({placeholders['dropout']: 0.})
+    feed_dict.update({placeholders['auto_dropout']: 0.})
 
+    if not FLAGS.auto_node:
+        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+        return np.reshape(recon, (num_nodes, num_nodes))
 
+    emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
+    return auto_build(emb, w1, w2)
 
 
 
@@ -172,6 +181,9 @@ def auto_build(emb, w1, w2):
 
 
 def get_roc_score(edges_pos, edges_neg, adj_rec = None):
+
+    if adj_rec is None:
+        adj_rec = reconstruct()
 
     preds = []
     pos = []
@@ -191,6 +203,8 @@ def get_roc_score(edges_pos, edges_neg, adj_rec = None):
     ap_score = average_precision_score(labels_all, preds_all)
 
     return roc_score, ap_score
+
+
 
 adj_label = adj_train + sp.eye(adj_train.shape[0])
 adj_label = sparse_to_tuple(adj_label)
