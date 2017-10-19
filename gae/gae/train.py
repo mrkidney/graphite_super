@@ -165,6 +165,7 @@ for i in range(FLAGS.test):
         moving_update = x
         update = np.zeros((num_nodes, num_nodes))
         for row in range(num_nodes):
+            print(str(row) + '/' + str(num_nodes))
             supplement = z_update(row)
             moving_update[row,:] += supplement
             moving_update[:,row] += supplement
@@ -213,6 +214,7 @@ for i in range(FLAGS.test):
 
     # Train model
     for epoch in range(FLAGS.epochs):
+        print(epoch)
 
         if FLAGS.edge_dropout > 0:
             adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
