@@ -184,7 +184,7 @@ def reconstruct():
 
 def get_roc_score(edges_pos, edges_neg, adj_rec = None):
 
-    if adj_rec = None:
+    if adj_rec is None:
         adj_rec = reconstruct()
 
     preds = []
