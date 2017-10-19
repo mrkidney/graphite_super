@@ -163,13 +163,13 @@ def reconstruct():
 
     moving_update = x
     update = np.zeros((num_nodes, num_nodes))
-    for row in range(num_nodes):
+    for row in range(1, num_nodes):
         supplement = z_update(row)
         moving_update[row,:] += supplement
         moving_update[:,row] += supplement
         partial_adj = partial_adj.tolil()
-        partial_adj[row,:] = cast(sigmoid(moving_update[row,:]))
-        partial_adj[:,row] = np.matrix(cast(sigmoid(moving_update[:,row]))).transpose()
+        partial_adj[row,:row] = cast(sigmoid(moving_update[row,:row]))
+        partial_adj[:row,row] = np.matrix(cast(sigmoid(moving_update[:row,row]))).transpose()
     return moving_update
 
 
