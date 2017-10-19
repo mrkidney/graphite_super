@@ -108,7 +108,7 @@ if FLAGS.gpu == -1:
 else:
     os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
     gpu_options = tf.GPUOptions(allow_growth=True)
-    sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
+    sess = tf.InteractiveSession(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True, log_device_placement=True))
 sess.run(tf.global_variables_initializer())
 
 
