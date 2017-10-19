@@ -21,21 +21,21 @@ from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple
 # Settings
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
+flags.DEFINE_float('learning_rate', 0.02, 'Initial learning rate.')
+flags.DEFINE_integer('epochs', 300, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 14, 'Number of units in hidden layer 3.')
-flags.DEFINE_integer('hidden4', 14, 'Number of units in hidden layer 4.')
+flags.DEFINE_integer('hidden3', 10, 'Number of units in hidden layer 3.')
+flags.DEFINE_integer('hidden4', 7, 'Number of units in hidden layer 4.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
-flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
-flags.DEFINE_float('autoregressive_scalar', 0.5, 'Scale down contribution of autoregressive to final link prediction')
+flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
+flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_float('sigmoid_scalar', 1., 'Scale up inner product before taking sigmoid prediction')
 flags.DEFINE_integer('sphere_prior', 1, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
-flags.DEFINE_float('auto_dropout', 0., 'Dropout for specifically autoregressive neurons')
+flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -161,17 +161,6 @@ def auto_build(emb, w1, w2):
         partial_adj[:row,row] = np.matrix(cast(sigmoid(moving_update[:row,row]))).transpose()
     return moving_update
 
-def reconstruct():
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    feed_dict.update({placeholders['auto_dropout']: 0.})
-
-    if not FLAGS.auto_node:
-        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-        return np.reshape(recon, (num_nodes, num_nodes))
-
-    emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
-    return auto_build(emb, w1, w2)
 
 
 
@@ -183,9 +172,6 @@ def reconstruct():
 
 
 def get_roc_score(edges_pos, edges_neg, adj_rec = None):
-
-    if adj_rec is None:
-        adj_rec = reconstruct()
 
     preds = []
     pos = []
@@ -235,6 +221,12 @@ for epoch in range(FLAGS.epochs):
           "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
           "val_ap=", "{:.5f}".format(ap_curr))
 
+if not FLAGS.auto_node:
+    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+    adj_rec = np.reshape(recon, (num_nodes, num_nodes))
+    roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_rec)
+    print(str(roc_score) + ", " + str(ap_score))
+    sys.exit()
 
 feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
 feed_dict.update({placeholders['dropout']: 0.})
