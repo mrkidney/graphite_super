@@ -232,7 +232,9 @@ for epoch in range(FLAGS.epochs):
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
           "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
           "val_ap=", "{:.5f}".format(ap_curr))
-
-roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
-print(str(roc_score) + ", " + str(ap_score))
+for i in np.arange(0.5, 0.8, 0.02)
+    print(i)
+    FLAGS.threshold = i
+    roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
+    print(str(roc_score) + ", " + str(ap_score))
 sess.close()
