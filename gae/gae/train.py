@@ -16,7 +16,7 @@ from sklearn.preprocessing import normalize
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
 from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto
-from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout
+from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 
 # Settings
 flags = tf.app.flags
@@ -140,31 +140,30 @@ def reconstruct():
     partial_adj = sp.coo_matrix((num_nodes, num_nodes))
 
     def z_update(row):
-        partial_norm = preprocess_graph(partial_adj)
+        partial_norm = preprocess_graph_coo(partial_adj)
 
         helper_feature = np.zeros((num_nodes, 1))
         helper_feature[row, 0] = 1
         z_prime = np.hstack((z, helper_feature))
 
         hidden = np.dot(z_prime, w1)
-        hidden = relu(partial_adj.dot(hidden))
+        hidden = relu(partial_norm.dot(hidden))
         hidden = np.dot(hidden, w2)
-        hidden = relu(partial_adj.dot(hidden))
+        hidden = partial_norm.dot(hidden)
 
         if FLAGS.sphere_prior:
             hidden = normalize(hidden)
         hidden = np.dot(hidden, hidden[row])
 
-        hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
         if not FLAGS.sphere_prior:
             hidden = np.tanh(hidden)
+        hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
         hidden[row:] = 0
         return hidden
 
     moving_update = x
     update = np.zeros((num_nodes, num_nodes))
     for row in range(num_nodes):
-        print(str(row) + '/' + str(num_nodes))
         supplement = z_update(row)
         moving_update[row,:] += supplement
         moving_update[:,row] += supplement
@@ -211,6 +210,8 @@ adj_label = sparse_to_tuple(adj_label)
 # Train model
 for epoch in range(FLAGS.epochs):
     print(epoch)
+    reconstruct()
+    sys.exit()
 
     if FLAGS.edge_dropout > 0:
         adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
