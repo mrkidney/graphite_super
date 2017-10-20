@@ -39,7 +39,6 @@ flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
 flags.DEFINE_integer('weird', 0, 'you know')
-flags.DEFINE_integer('scalar', 0, 'you know')
 flags.DEFINE_integer('verbose', 0, 'verboseness')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -99,7 +98,8 @@ for test in range(10):
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
-    norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+    #norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+    norm = adj.sum()
 
     # Optimizer
     with tf.name_scope('optimizer'):
