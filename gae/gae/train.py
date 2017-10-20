@@ -17,6 +17,7 @@ from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
 from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
+from preprocessing import preprocess_partials
 
 # Settings
 flags = tf.app.flags
@@ -39,7 +40,7 @@ flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
 flags.DEFINE_integer('weird', 0, 'you know')
-flags.DEFINE_integer('verbose', 0, 'verboseness')
+flags.DEFINE_integer('verbose', 1, 'verboseness')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
@@ -74,6 +75,11 @@ for test in range(10):
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
     adj = adj_train
 
+    if FLAGS.auto_node:
+        partials = preprocess_partials(adj)
+    else:
+        partials = sparse_to_tuple(adj)
+
     adj_norm = preprocess_graph(adj)
 
     # Define placeholders
@@ -82,6 +88,7 @@ for test in range(10):
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'adj_label_mini': tf.sparse_placeholder(tf.float32),
+        'partials': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
     }
@@ -132,7 +139,7 @@ for test in range(10):
     def auto_build(emb, w1, w2):
         z = normalize(emb)
         x = np.dot(z, z.T)
-        x *= (1 - FLAGS.autoregressive_scalar) * FLAGS.sigmoid_scalar
+        x *= (1 - FLAGS.autoregressive_scalar)
         partial_adj = sp.coo_matrix((num_nodes, num_nodes))
 
         def z_update(row):
@@ -153,13 +160,13 @@ for test in range(10):
 
             if not FLAGS.sphere_prior:
                 hidden = np.tanh(hidden)
-            hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
-            hidden[row:] = 0
+            hidden *= FLAGS.autoregressive_scalar
+            hidden[row+1:] = 0
             return hidden
 
         moving_update = x
         update = np.zeros((num_nodes, num_nodes))
-        for row in range(1, num_nodes):
+        for row in range(num_nodes):
             supplement = z_update(row)
             moving_update[row,:] += supplement
             moving_update[:,row] += supplement
@@ -170,7 +177,7 @@ for test in range(10):
 
 
     def reconstruct():
-        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, partials, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
@@ -180,9 +187,6 @@ for test in range(10):
 
         emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
         return auto_build(emb, w1, w2)
-
-
-
 
 
 
@@ -228,7 +232,7 @@ for test in range(10):
             adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, placeholders)
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
@@ -240,34 +244,19 @@ for test in range(10):
             continue
 
         roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
+        roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
-                  "val_ap=", "{:.5f}".format(ap_curr))
+                  "val_ap=", "{:.5f}".format(ap_curr),
+                  "test_roc=", "{:.5f}".format(roc_score),
+                  "test_ap=", "{:.5f}".format(ap_score))
 
-    if not FLAGS.auto_node:
-        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-        adj_rec = np.reshape(recon, (num_nodes, num_nodes))
-        roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_rec)
-        print(str(roc_score) + ", " + str(ap_score))
-        rocs[test] = roc_score
-        aps[test] = ap_score
-        # sys.exit()
-
-    # feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
-    # feed_dict.update({placeholders['dropout']: 0.})
-    # feed_dict.update({placeholders['auto_dropout']: 0.})
-    # emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
-
-    # for i in np.arange(0.5, 0.8, 0.02):
-    #     FLAGS.threshold = i
-    #     adj_rec = auto_build(emb, w1, w2)
-    #     roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_rec)
-    #     print(str(i) + ", " + str(roc_score) + ", " + str(ap_score))
-    # sess.close()
+    
     if FLAGS.verbose:
         break
 
-print((np.mean(rocs), np.std(rocs)))
-print((np.mean(aps), np.std(aps)))
+if not FLAGS.verbose:
+    print((np.mean(rocs), np.std(rocs)))
+    print((np.mean(aps), np.std(aps)))

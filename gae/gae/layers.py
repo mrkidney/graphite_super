@@ -7,6 +7,16 @@ FLAGS = flags.FLAGS
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}
 
+def matmul3(x, y):
+    input_dim = y.get_shape().as_list()[0]
+    output_dim = y.get_shape().as_list()[1]
+    vertex_count = int(x.get_shape()[1])
+
+    x = tf.reshape(x, [-1, input_dim])
+    output = tf.matmul(x, y)
+    output = tf.reshape(output, [-1, vertex_count, output_dim])
+    return output
+
 
 def get_layer_uid(layer_name=''):
     """Helper function, assigns unique layer IDs
@@ -135,7 +145,6 @@ class GraphConvolution(Layer):
         outputs = self.act(x)
         return outputs
 
-
 class GraphConvolutionSparse(Layer):
     """Graph convolution layer for sparse inputs."""
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
@@ -158,11 +167,11 @@ class GraphConvolutionSparse(Layer):
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, hidden_dim, hidden_dim2, adj, num_nodes, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, hidden_dim, hidden_dim2, partials, num_nodes, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
-        self.adj = adj
+        self.partials = partials
         self.num_nodes = num_nodes
         self.auto_dropout = auto_dropout
         with tf.variable_scope(self.name + '_vars'):
@@ -171,49 +180,36 @@ class AutoregressiveDecoder(Layer):
 
 
     def _call(self, inputs):
-        adj = self.adj
         z = tf.nn.dropout(inputs, 1-self.dropout)
 
         x = tf.transpose(z)
         x = tf.matmul(z, x)
-        x *= (1 - FLAGS.autoregressive_scalar) * FLAGS.sigmoid_scalar
+        x *= (1 - FLAGS.autoregressive_scalar)
 
-        num_nodes = self.num_nodes
-
-        rows, eye = sparse_diag(num_nodes)
-
-        def z_update(row):
-            partial_adj = tf.sparse_slice(adj, [0,0], row)
-            partial_adj = tf.sparse_reset_shape(partial_adj, [num_nodes, num_nodes])
-            partial_adj = tf.sparse_maximum(partial_adj, eye)
-            deg = tf.sparse_reduce_sum(partial_adj, 0)
-            deg = tf.pow(tf.maximum(deg, 1), -0.5)
-            deg = tf.SparseTensor(rows, deg, [num_nodes, num_nodes])
-
-            helper_feature = tf.one_hot([row[0]], num_nodes)
-            helper_feature = tf.reshape(helper_feature, [num_nodes, 1])
-            z_prime = tf.concat((z, helper_feature), 1)
-
-            hidden = tf.matmul(z_prime, self.vars['weights1'])
-            hidden = tf.nn.relu(sparse_convolution(partial_adj, deg, hidden))
-            hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
-            hidden = tf.matmul(hidden, self.vars['weights2'])
-            hidden = sparse_convolution(partial_adj, deg, hidden)
-
-            if FLAGS.sphere_prior:
-                hidden = tf.nn.l2_normalize(hidden, dim = 1)
-            index = tf.cast(row[0], tf.int32)
-            vec = tf.expand_dims(hidden[index], 1)
-            hidden = tf.squeeze(tf.matmul(hidden, vec))
-            if not FLAGS.sphere_prior:
-                hidden = tf.nn.tanh(hidden)
-            hidden *= FLAGS.autoregressive_scalar * FLAGS.sigmoid_scalar
-            hidden = tf.concat([hidden[:index + 1], tf.zeros([num_nodes - index - 1])], 0)
-            return hidden
+        z = tf.expand_dims(z, 0)
+        z = tf.tile(z, [self.num_nodes, 1, 1])
+        helper_feature = tf.expand_dims(tf.eye(self.num_nodes), 2)
+        z = tf.concat((z, helper_feature), 2)
+        partials = tf.sparse_reshape(partials, (self.num_nodes, self.num_nodes, self.num_nodes))
+        partials = tf.sparse_tensor_to_dense(self.partials)
 
 
-        supplement = tf.map_fn(z_update, rows, dtype = tf.float32, parallel_iterations = 100)
-        supplement = (supplement + tf.transpose(supplement))
+        hidden = matmul3(z, self.vars['weights1'])
+        hidden = tf.nn.relu(tf.matmul(partials, hidden))
+        hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
+        hidden = matmul3(hidden, self.vars['weights2'])
+        hidden = tf.matmul(partials, hidden)
+
+        if FLAGS.sphere_prior:
+            hidden = tf.nn.l2_normalize(hidden, dim = 1)
+
+        hidden = tf.matmul(hidden, tf.transpose(hidden, [0, 2, 1]))
+        supplement = tf.transpose(tf.matrix_diag_part(tf.transpose(hidden, [2, 1, 0])))
+        supplement = tf.matrix_band_part(supplement, -1, 0)
+        supplement += tf.transpose(supplement)
+        supplement *= FLAGS.autoregressive_scalar
+
+
         outputs = x + supplement
         return outputs
 

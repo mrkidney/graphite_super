@@ -18,34 +18,17 @@ def preprocess_graph_coo(adj):
     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return adj_normalized
 
-def preprocess_partial_graphs(adj):
+
+def preprocess_partials(adj):
+    adj = sp.lil_matrix(adj)
     num_nodes = adj.shape[0]
-    row = []
-    col = []
-    data = []
-    partial = sp.dok_matrix((num_nodes, num_nodes))
-    partial_norm = preprocess_graph_coo(partial)
+    partials = []
     for i in range(num_nodes):
-        print(i * 1.0 / num_nodes)
-        for j in range(i):
-            val = adj[i,j]
-            if val != 0:
-                partial[i,j] = val
-                partial[j,i] = val
-                partial_norm = preprocess_graph_coo(partial)
-
-            row1 = partial_norm.getrow(i).tocoo()
-            row2 = partial_norm.getrow(j).tocoo()
-            count = len(row1.col) + len(row2.col)
-
-            row += [i*num_nodes + j] * count
-            col += list(row1.col) + list(row2.col + num_nodes)
-            data += list(row1.data) + list(row2.data)
-            row += [j*num_nodes + i] * count
-            col += list(row1.col) + list(row2.col + num_nodes)
-            data += list(row1.data) + list(row2.data)
-
-    partials = sp.csr_matrix((data, (row, col)), shape=(num_nodes*num_nodes, 2*num_nodes))
+        print(str(i) + '/' + str(num_nodes))
+        partial = adj[:i, :i]
+        partial.set_shape((num_nodes, num_nodes))
+        partials.append(preprocess_graph_coo(partial))
+    partials = sparse_to_tuple(sp.vstack(partials))
     return partials
 
 def preprocess_graph(adj):
@@ -56,13 +39,14 @@ def preprocess_graph(adj):
     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return sparse_to_tuple(adj_normalized)
 
-def construct_feed_dict(adj_normalized, adj_label_mini, adj, features, placeholders):
+def construct_feed_dict(adj_normalized, adj_label_mini, adj, features, partials, placeholders):
     # construct feed dictionary
     feed_dict = dict()
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
     feed_dict.update({placeholders['adj_label_mini']: adj_label_mini})
+    feed_dict.update({placeholders['partials']: partials})
     return feed_dict
 
 def edge_dropout(adj, dropout):
@@ -88,7 +72,6 @@ def edge_dropout(adj, dropout):
     adj_train = adj_train + adj_train.T
 
     return adj_train
-
 
 def mask_test_edges(adj):
     # Function to build test set with 10% positive links
