@@ -34,15 +34,12 @@ class OptimizerVAE(object):
         X = labels - tf.reshape(tf.sparse_tensor_to_dense(model.adj_label_mini), [-1])
         scale = tf.reduce_sum(X) + 0.0001
 
-        real_norm = num_nodes ** 2 / ((num_nodes ** 2 - norm) * 2)
-        self.cost = real_norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
+
+        self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
+
+
         if FLAGS.weird:
-            real_norm = num_nodes ** 2 / ((num_nodes ** 2 - norm) * 2 + scale * pos_weight)
-            self.cost = real_norm * tf.reduce_mean((5*X + 1) * tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
-
-
-        # if FLAGS.weird:
-        #     self.cost += 1.0 / scale * tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=preds_sub * X, labels=labels_sub * X))
+            self.cost += 1.0 / scale * tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=preds_sub * X, labels=labels_sub * X))
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
 
         # Latent loss

@@ -98,8 +98,7 @@ for test in range(10):
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
-    #norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
-    norm = adj.sum()
+    norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
     # Optimizer
     with tf.name_scope('optimizer'):
