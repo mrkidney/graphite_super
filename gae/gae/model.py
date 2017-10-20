@@ -52,6 +52,7 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
+        self.adj_label_mini = placeholders['adj_label_mini']
         self.build()
 
     def encoder(self, inputs):
@@ -61,7 +62,7 @@ class GCNModelVAE(Model):
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
-                                              dropout=self.dropout,
+                                              dropout=0.,
                                               logging=self.logging)(inputs)
 
         self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
@@ -92,6 +93,7 @@ class GCNModelVAE(Model):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
+                                      dropout=0.,
                                       logging=self.logging)(z)
 
         reconstructions = tf.reshape(reconstructions, [-1])

@@ -31,12 +31,16 @@ flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
 flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_float('sigmoid_scalar', 1., 'Scale up inner product before taking sigmoid prediction')
-flags.DEFINE_integer('sphere_prior', 1, '1 for normalizing the embeddings to be near sphere surface')
+flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
+
+flags.DEFINE_integer('weird', 0, 'you know')
+flags.DEFINE_integer('scalar', 0, 'you know')
+flags.DEFINE_integer('verbose', 0, 'verboseness')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
@@ -75,6 +79,7 @@ placeholders = {
     'features': tf.sparse_placeholder(tf.float32),
     'adj': tf.sparse_placeholder(tf.float32),
     'adj_orig': tf.sparse_placeholder(tf.float32),
+    'adj_label_mini': tf.sparse_placeholder(tf.float32),
     'dropout': tf.placeholder_with_default(0., shape=()),
     'auto_dropout': tf.placeholder_with_default(0., shape=()),
 }
@@ -163,7 +168,7 @@ def auto_build(emb, w1, w2):
 
 
 def reconstruct():
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: 0.})
     feed_dict.update({placeholders['auto_dropout']: 0.})
 
@@ -214,11 +219,14 @@ for epoch in range(FLAGS.epochs):
 
     if FLAGS.edge_dropout > 0:
         adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
+        adj_label_mini = adj_train_mini + sp.eye(adj_train_mini.shape[0])
+        adj_label_mini = sparse_to_tuple(adj_label_mini)
         adj_norm_mini = preprocess_graph(adj_train_mini)
     else:
+        adj_label_mini = adj_label
         adj_norm_mini = adj_norm
 
-    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
+    feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
     feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
@@ -231,9 +239,10 @@ for epoch in range(FLAGS.epochs):
 
     roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
 
-    print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-          "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
-          "val_ap=", "{:.5f}".format(ap_curr))
+    if FLAGS.verbose:
+        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
+              "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
+              "val_ap=", "{:.5f}".format(ap_curr))
 
 if not FLAGS.auto_node:
     emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
@@ -242,7 +251,7 @@ if not FLAGS.auto_node:
     print(str(roc_score) + ", " + str(ap_score))
     sys.exit()
 
-feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
 feed_dict.update({placeholders['dropout']: 0.})
 feed_dict.update({placeholders['auto_dropout']: 0.})
 emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
