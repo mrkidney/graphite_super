@@ -252,8 +252,8 @@ for test in range(10):
         adj_rec = np.reshape(recon, (num_nodes, num_nodes))
         roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_rec)
         print(str(roc_score) + ", " + str(ap_score))
-        rocs[i] = roc_score
-        aps[i] = ap_score
+        rocs[test] = roc_score
+        aps[test] = ap_score
         # sys.exit()
 
     # feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
