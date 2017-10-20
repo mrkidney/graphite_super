@@ -7,14 +7,13 @@ FLAGS = flags.FLAGS
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}
 
-def matmul3(x, y):
+def matmul3(x, y, num_nodes):
     input_dim = y.get_shape().as_list()[0]
     output_dim = y.get_shape().as_list()[1]
-    vertex_count = int(x.get_shape()[1])
 
     x = tf.reshape(x, [-1, input_dim])
     output = tf.matmul(x, y)
-    output = tf.reshape(output, [-1, vertex_count, output_dim])
+    output = tf.reshape(output, [-1, num_nodes, output_dim])
     return output
 
 
@@ -194,10 +193,10 @@ class AutoregressiveDecoder(Layer):
         partials = tf.sparse_tensor_to_dense(self.partials)
 
 
-        hidden = matmul3(z, self.vars['weights1'])
+        hidden = matmul3(z, self.vars['weights1'], self.num_nodes)
         hidden = tf.nn.relu(tf.matmul(partials, hidden))
         hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
-        hidden = matmul3(hidden, self.vars['weights2'])
+        hidden = matmul3(hidden, self.vars['weights2'], self.num_nodes)
         hidden = tf.matmul(partials, hidden)
 
         if FLAGS.sphere_prior:
