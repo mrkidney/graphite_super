@@ -190,7 +190,7 @@ class AutoregressiveDecoder(Layer):
         z = tf.tile(z, [self.num_nodes, 1, 1])
         helper_feature = tf.expand_dims(tf.eye(self.num_nodes), 2)
         z = tf.concat((z, helper_feature), 2)
-        partials = tf.sparse_reshape(partials, (self.num_nodes, self.num_nodes, self.num_nodes))
+        partials = tf.sparse_reshape(self.partials, (self.num_nodes, self.num_nodes, self.num_nodes))
         partials = tf.sparse_tensor_to_dense(self.partials)
 
 
