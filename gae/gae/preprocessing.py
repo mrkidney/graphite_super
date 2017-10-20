@@ -24,9 +24,9 @@ def preprocess_partials(adj):
     num_nodes = adj.shape[0]
     partials = []
     for i in range(num_nodes):
-        print(str(i) + '/' + str(num_nodes))
-        partial = adj[:i, :i]
-        partial.set_shape((num_nodes, num_nodes))
+        # print(str(i) + '/' + str(num_nodes))
+        partial = adj[:i, :i].tocoo()
+        partial = sp.coo_matrix((partial.data, (partial.row, partial.col)), (num_nodes, num_nodes))
         partials.append(preprocess_graph_coo(partial))
     partials = sparse_to_tuple(sp.vstack(partials))
     return partials
