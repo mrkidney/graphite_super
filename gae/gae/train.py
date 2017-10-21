@@ -251,6 +251,7 @@ for test in range(10):
     aps[test] = test_aps[arg]
 
     if FLAGS.verbose:
+        print(arg)
         print(test_rocs[arg])
         print(test_aps[arg])
         break
