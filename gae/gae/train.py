@@ -263,8 +263,10 @@ for test in range(10):
     arg = np.argmax(val_rocs)
     rocs[test] = test_rocs[arg]
     aps[test] = test_aps[arg]
-    
+
     if FLAGS.verbose:
+        print(test_rocs[arg])
+        print(test_aps[arg])
         break
 if not FLAGS.verbose:
     print((np.mean(rocs), np.std(rocs)))
