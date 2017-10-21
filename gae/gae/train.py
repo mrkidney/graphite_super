@@ -142,6 +142,7 @@ for test in range(10):
         z = normalize(emb)
 
         for row in range(num_nodes):
+            print(str(row) + '/' + str(num_nodes))
             partial_adj = cast(sigmoid(np.dot(z, z.T)))
             partial_norm = preprocess_graph_coo(partial_adj)
             helper_feature = np.zeros((num_nodes, 1))
