@@ -174,7 +174,7 @@ class AutoregressiveDecoder(Layer):
         self.num_nodes = num_nodes
         self.auto_dropout = auto_dropout
         with tf.variable_scope(self.name + '_vars'):
-            self.vars['weights1'] = weight_variable_glorot(input_dim + 1, hidden_dim, name="weights1")
+            self.vars['weights1'] = weight_variable_glorot(input_dim, hidden_dim, name="weights1")
             self.vars['weights2'] = weight_variable_glorot(hidden_dim, hidden_dim2, name="weights2")
 
     def _call(self, inputs):
