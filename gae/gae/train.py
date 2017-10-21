@@ -220,6 +220,10 @@ for test in range(10):
     adj_label = adj_train + sp.eye(adj_train.shape[0])
     adj_label = sparse_to_tuple(adj_label)
 
+    val_rocs = np.zeros(FLAGS.epochs)
+    test_rocs = np.zeros(FLAGS.epochs)
+    test_aps = np.zeros(FLAGS.epochs)
+
     # Train model
     for epoch in range(FLAGS.epochs):
 
@@ -244,7 +248,10 @@ for test in range(10):
             continue
 
         roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
+        val_rocs[epoch] = roc_curr
         roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
+        test_rocs[epoch] = roc_score
+        test_aps[epoch] = ap_score
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
@@ -253,10 +260,14 @@ for test in range(10):
                   "test_roc=", "{:.5f}".format(roc_score),
                   "test_ap=", "{:.5f}".format(ap_score))
 
+    arg = np.argmax(val_rocs)
+    rocs[test] = test_rocs[arg]
+    aps[test] = test_aps[arg]
+    print(arg)
+    print(test_rocs[arg])
     
     if FLAGS.verbose:
         break
-
 if not FLAGS.verbose:
     print((np.mean(rocs), np.std(rocs)))
     print((np.mean(aps), np.std(aps)))
