@@ -141,23 +141,19 @@ for test in range(10):
     def auto_build(emb, w1, w2):
         z = normalize(emb)
 
-        for row in range(num_nodes):
-            print(str(row) + '/' + str(num_nodes))
+        for row in range(10):
             partial_adj = cast(sigmoid(np.dot(z, z.T)))
             partial_norm = preprocess_graph_coo(partial_adj)
-            helper_feature = np.zeros((num_nodes, 1))
-            helper_feature[row, 0] = 1
-            z_prime = np.hstack((z, helper_feature))
 
-            hidden = np.dot(z_prime, w1)
+            hidden = np.dot(z, w1)
             hidden = relu(partial_norm.dot(hidden))
             hidden = np.dot(hidden, w2)
             hidden = partial_norm.dot(hidden)
             hidden = normalize(hidden)
 
-            z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * hidden[row]
-            z = normalize(emb)
-        return cast(sigmoid(np.dot(z, z.T)))
+            z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden
+            z = normalize(z)
+        return sigmoid(np.dot(z, z.T))
 
 
     def reconstruct():

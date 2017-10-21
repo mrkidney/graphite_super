@@ -142,18 +142,14 @@ class GCNModelAuto(GCNModelVAE):
         super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        row = self.row
-        helper_feature = tf.expand_dims(tf.one_hot(row, self.n_samples), 1)
-        update = tf.concat((z, tf.cast(helper_feature, dtype = tf.float32)), 1)
-
-        l1 = GraphConvolution(input_dim=FLAGS.hidden2 + 1,
+        l1 = GraphConvolution(input_dim=FLAGS.hidden2,
                                        output_dim=FLAGS.hidden3,
                                        adj=self.adj,
                                        act=tf.nn.relu,
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        update = l1(update)
+        update = l1(z)
         self.w1 = l1.vars['weights']
         l2 = GraphConvolution(input_dim=FLAGS.hidden3,
                                        output_dim=FLAGS.hidden2,
@@ -164,7 +160,6 @@ class GCNModelAuto(GCNModelVAE):
         self.w2 = l2.vars['weights']
         update = l2(update)
         update = tf.nn.l2_normalize(update, 1)
-        update = update * helper_feature
 
         z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
         z = tf.nn.l2_normalize(z, 1)
