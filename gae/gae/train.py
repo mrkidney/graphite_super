@@ -168,7 +168,7 @@ for test in range(10):
             emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
             return np.reshape(recon, (num_nodes, num_nodes))
 
-        emb, w1, w2 = sess.run([model.z_mean, model.decode.vars['weights1'], model.decode.vars['weights2']], feed_dict=feed_dict)
+        emb, w1, w2 = sess.run([model.z_mean, model.w1, model.w2], feed_dict=feed_dict)
         return auto_build(emb, w1, w2)
 
 
@@ -222,7 +222,7 @@ for test in range(10):
         row = 0
         if FLAGS.auto_node:
             row = np.random.choice(len(partials))
-            partials = partials[row]
+            #partials = sparse_to_tuple(partials[row])
 
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
