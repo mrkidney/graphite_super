@@ -173,6 +173,7 @@ class AutoregressiveDecoder(Layer):
         self.partials = partials
         self.num_nodes = num_nodes
         self.auto_dropout = auto_dropout
+        self.hidden_dim = hidden_dim
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights1'] = weight_variable_glorot(input_dim, hidden_dim, name="weights1")
             self.vars['weights2'] = weight_variable_glorot(hidden_dim, hidden_dim2, name="weights2")
@@ -188,7 +189,7 @@ class AutoregressiveDecoder(Layer):
 
         hidden = tf.matmul(z, self.vars['weights1'])
         hidden = tf.sparse_tensor_dense_matmul(partials, hidden)
-        hidden = tf.reshape(hidden, [self.num_nodes, self.num_nodes, hidden_dim])
+        hidden = tf.reshape(hidden, [self.num_nodes, self.num_nodes, self.hidden_dim])
 
         if FLAGS.sphere_prior:
             hidden = tf.nn.l2_normalize(hidden, dim = 1)
