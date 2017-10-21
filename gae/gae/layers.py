@@ -184,7 +184,7 @@ class AutoregressiveDecoder(Layer):
         x = tf.matmul(z, x)
         x *= (1 - FLAGS.autoregressive_scalar)
 
-        partials = tf.sparse_reshape(self.partials, (self.num_nodes, self.num_nodes, self.num_nodes))
+        partials = tf.sparse_reshape(self.partials, (self.num_nodes * self.num_nodes, self.num_nodes))
 
         hidden = tf.matmul(z, self.vars['weights1'])
         hidden = tf.sparse_tensor_dense_matmul(partials, hidden)
