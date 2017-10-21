@@ -143,7 +143,8 @@ class GCNModelAuto(GCNModelVAE):
 
     def decoder(self, z):
         row = self.row
-        update = tf.concat(z, tf.expand_dims(tf.one_hot(row, self.n_samples), 1))
+        helper_feature = tf.expand_dims(tf.one_hot(row, self.n_samples), 1)
+        update = tf.concat(z, tf.cast(helper_feature, dtype = tf.float32))
 
         update = GraphConvolution(input_dim=FLAGS.hidden2 + 1,
                                        output_dim=FLAGS.hidden3,
