@@ -145,13 +145,16 @@ for test in range(10):
         def z_update(row):
             partial_norm = preprocess_graph_coo(partial_adj)
 
-            helper_feature = np.zeros((num_nodes, 1))
-            helper_feature[row, 0] = 1
-            z_prime = np.hstack((z, helper_feature))
+            # helper_feature = np.zeros((num_nodes, 1))
+            # helper_feature[row, 0] = 1
+            # z_prime = np.hstack((z, helper_feature))
 
-            hidden = np.dot(z_prime, w1)
-            hidden = relu(partial_norm.dot(hidden))
-            hidden = np.dot(hidden, w2)
+            # hidden = np.dot(z_prime, w1)
+            # hidden = relu(partial_norm.dot(hidden))
+            # hidden = np.dot(hidden, w2)
+            # hidden = partial_norm.dot(hidden)
+
+            hidden = np.dot(z, w1)
             hidden = partial_norm.dot(hidden)
 
             if FLAGS.sphere_prior:
