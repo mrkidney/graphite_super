@@ -160,7 +160,7 @@ class GCNModelAuto(GCNModelVAE):
                                        dropout=self.auto_dropout,
                                        logging=self.logging)(update)
 
-        z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * tt.nn.l2_normalize(update[row])
+        z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * tf.nn.l2_normalize(update[row])
 
         z[row] = tf.nn.l2_normalize(z[row])
 
