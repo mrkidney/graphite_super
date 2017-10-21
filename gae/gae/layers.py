@@ -194,8 +194,8 @@ class AutoregressiveDecoder(Layer):
         if FLAGS.sphere_prior:
             hidden = tf.nn.l2_normalize(hidden, dim = 1)
 
-        hidden = tf.matmul(hidden, tf.transpose(hidden, [0, 2, 1]))
         supplement = tf.transpose(tf.matrix_diag_part(tf.transpose(hidden, [2, 1, 0])))
+        supplement = tf.squeeze(tf.matmul(hidden, tf.expand_dims(supplement, 2)))
         supplement = tf.matrix_band_part(supplement, -1, 0)
         supplement += tf.transpose(supplement)
         supplement *= FLAGS.autoregressive_scalar
