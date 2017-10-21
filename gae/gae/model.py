@@ -54,6 +54,7 @@ class GCNModelVAE(Model):
         self.adj_label = placeholders['adj_orig']
         self.adj_label_mini = placeholders['adj_label_mini']
         self.partials = placeholders['partials']
+        self.row = placeholders['row']
         self.build()
 
     def encoder(self, inputs):
@@ -86,7 +87,7 @@ class GCNModelVAE(Model):
         if not random:
           z = self.z_mean
 
-        if FLAGS.sphere_prior:
+        if FLAGS.auto_node or FLAGS.sphere_prior:
           z = tf.nn.l2_normalize(z, dim = 1)
         return z
 
@@ -141,16 +142,41 @@ class GCNModelAuto(GCNModelVAE):
         super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        self.decode = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
-                                      hidden_dim=FLAGS.hidden3,
-                                      hidden_dim2=FLAGS.hidden4,
-                                      act=lambda x: x,
-                                      partials = self.partials,
-                                      num_nodes = self.n_samples,
-                                      auto_dropout = self.auto_dropout,
-                                      logging=self.logging)
+        row = self.row
+        update = tf.concat(z, tf.expand_dims(tf.one_hot(row, self.n_samples), 1))
 
-        reconstructions = self.decode(z)
+        update = GraphConvolution(input_dim=FLAGS.hidden2 + 1,
+                                       output_dim=FLAGS.hidden3,
+                                       adj=self.adj,
+                                       act=tf.nn.relu,
+                                       dropout=self.dropout,
+                                       logging=self.logging)(update)
+
+        update = GraphConvolution(input_dim=FLAGS.hidden3,
+                                       output_dim=FLAGS.hidden2,
+                                       adj=self.adj,
+                                       act=lambda x: x,
+                                       dropout=self.auto_dropout,
+                                       logging=self.logging)(update)
+
+        z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * tt.nn.l2_normalize(update[row])
+
+        z[row] = tf.nn.l2_normalize(z[row])
+
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
+                                      act=lambda x: x,
+                                      dropout=0.,
+                                      logging=self.logging)(z)
+
+        # self.decode = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
+        #                               hidden_dim=FLAGS.hidden3,
+        #                               hidden_dim2=FLAGS.hidden4,
+        #                               act=lambda x: x,
+        #                               partials = self.partials,
+        #                               row = self.row,
+        #                               num_nodes = self.n_samples,
+        #                               auto_dropout = self.auto_dropout,
+        #                               logging=self.logging)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions

@@ -41,6 +41,7 @@ flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph predic
 
 flags.DEFINE_integer('weird', 0, 'you know')
 flags.DEFINE_integer('verbose', 1, 'verboseness')
+flags.DEFINE_integer('mini_batch', 100, 'mini batches of partial graphs')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
@@ -91,6 +92,7 @@ for test in range(10):
         'partials': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
+        'row': tf.placeholder_with_default(0, shape=())
     }
 
     num_nodes = adj.shape[0]
@@ -138,45 +140,23 @@ for test in range(10):
 
     def auto_build(emb, w1, w2):
         z = normalize(emb)
-        x = np.dot(z, z.T)
-        x *= (1 - FLAGS.autoregressive_scalar)
-        partial_adj = sp.coo_matrix((num_nodes, num_nodes))
 
-        def z_update(row):
-            partial_norm = preprocess_graph_coo(partial_adj)
-
-            # helper_feature = np.zeros((num_nodes, 1))
-            # helper_feature[row, 0] = 1
-            # z_prime = np.hstack((z, helper_feature))
-
-            # hidden = np.dot(z_prime, w1)
-            # hidden = relu(partial_norm.dot(hidden))
-            # hidden = np.dot(hidden, w2)
-            # hidden = partial_norm.dot(hidden)
-
-            hidden = np.dot(z, w1)
-            hidden = partial_norm.dot(hidden)
-
-            if FLAGS.sphere_prior:
-                hidden = normalize(hidden)
-            hidden = np.dot(hidden, hidden[row])
-
-            if not FLAGS.sphere_prior:
-                hidden = np.tanh(hidden)
-            hidden *= FLAGS.autoregressive_scalar
-            hidden[row+1:] = 0
-            return hidden
-
-        moving_update = x
-        update = np.zeros((num_nodes, num_nodes))
         for row in range(num_nodes):
-            supplement = z_update(row)
-            moving_update[row,:] += supplement
-            moving_update[:,row] += supplement
-            partial_adj = partial_adj.tolil()
-            partial_adj[row,:row] = cast(sigmoid(moving_update[row,:row]))
-            partial_adj[:row,row] = np.matrix(cast(sigmoid(moving_update[:row,row]))).transpose()
-        return moving_update
+            partial_adj = cast(sigmoid(np.dot(z, z.T)))
+            partial_norm = preprocess_graph_coo(partial_adj)
+            helper_feature = np.zeros((num_nodes, 1))
+            helper_feature[row, 0] = 1
+            z_prime = np.hstack((z, helper_feature))
+
+            hidden = np.dot(z_prime, w1)
+            hidden = relu(partial_norm.dot(hidden))
+            hidden = np.dot(hidden, w2)
+            hidden = partial_norm.dot(hidden)
+            hidden = normalize(hidden)
+
+            z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * hidden[row]
+            z = normalize(emb)
+        return cast(sigmoid(np.dot(z, z.T)))
 
 
     def reconstruct():
@@ -239,9 +219,15 @@ for test in range(10):
             adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
+        row = 0
+        if FLAGS.auto_node:
+            row = np.random.choice(len(partials))
+            partials = partials[row]
+
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
+        feed_dict.update({placeholders['row']: row})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]

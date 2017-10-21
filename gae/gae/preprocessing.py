@@ -18,7 +18,6 @@ def preprocess_graph_coo(adj):
     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return adj_normalized
 
-
 def preprocess_partials(adj):
     adj = sp.lil_matrix(adj)
     num_nodes = adj.shape[0]

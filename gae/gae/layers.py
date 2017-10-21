@@ -166,43 +166,18 @@ class GraphConvolutionSparse(Layer):
 
 class AutoregressiveDecoder(Layer):
     """Decoder model layer for link prediction."""
-    def __init__(self, input_dim, hidden_dim, hidden_dim2, partials, num_nodes, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
+    def __init__(self, input_dim, hidden_dim, hidden_dim2, partials, row, num_nodes, dropout=0., auto_dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(AutoregressiveDecoder, self).__init__(**kwargs)
         self.dropout = dropout
         self.act = act
         self.partials = partials
+        self.row = row
         self.num_nodes = num_nodes
         self.auto_dropout = auto_dropout
         self.hidden_dim = hidden_dim
         with tf.variable_scope(self.name + '_vars'):
-            self.vars['weights1'] = weight_variable_glorot(input_dim, hidden_dim, name="weights1")
+            self.vars['weights1'] = weight_variable_glorot(input_dim + 1, hidden_dim, name="weights1")
             self.vars['weights2'] = weight_variable_glorot(hidden_dim, hidden_dim2, name="weights2")
-
-    def _call(self, inputs):
-        z = tf.nn.dropout(inputs, 1-self.dropout)
-
-        x = tf.transpose(z)
-        x = tf.matmul(z, x)
-        x *= (1 - FLAGS.autoregressive_scalar)
-
-        partials = tf.sparse_reshape(self.partials, (self.num_nodes * self.num_nodes, self.num_nodes))
-
-        hidden = tf.matmul(z, self.vars['weights1'])
-        hidden = tf.sparse_tensor_dense_matmul(partials, hidden)
-        hidden = tf.reshape(hidden, [self.num_nodes, self.num_nodes, self.hidden_dim])
-
-        if FLAGS.sphere_prior:
-            hidden = tf.nn.l2_normalize(hidden, dim = 1)
-
-        supplement = tf.transpose(tf.matrix_diag_part(tf.transpose(hidden, [2, 1, 0])))
-        supplement = tf.squeeze(tf.matmul(hidden, tf.expand_dims(supplement, 2)))
-        supplement = tf.matrix_band_part(supplement, -1, 0)
-        supplement += tf.transpose(supplement)
-        supplement *= FLAGS.autoregressive_scalar
-
-
-        outputs = x + supplement
-        return outputs
 
     # def _call(self, inputs):
     #     z = tf.nn.dropout(inputs, 1-self.dropout)
@@ -211,32 +186,57 @@ class AutoregressiveDecoder(Layer):
     #     x = tf.matmul(z, x)
     #     x *= (1 - FLAGS.autoregressive_scalar)
 
-    #     z = tf.expand_dims(z, 0)
-    #     z = tf.tile(z, [self.num_nodes, 1, 1])
-    #     helper_feature = tf.expand_dims(tf.eye(self.num_nodes), 2)
-    #     z = tf.concat((z, helper_feature), 2)
-    #     partials = tf.sparse_reshape(self.partials, (self.num_nodes, self.num_nodes, self.num_nodes))
-    #     partials = tf.sparse_tensor_to_dense(self.partials)
+    #     partials = tf.sparse_reshape(self.partials, (self.num_nodes * self.num_nodes, self.num_nodes))
 
-
-    #     hidden = matmul3(z, self.vars['weights1'], self.num_nodes)
-    #     hidden = tf.nn.relu(tf.matmul(partials, hidden))
-    #     hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
-    #     hidden = matmul3(hidden, self.vars['weights2'], self.num_nodes)
-    #     hidden = tf.matmul(partials, hidden)
+    #     hidden = tf.matmul(z, self.vars['weights1'])
+    #     hidden = tf.sparse_tensor_dense_matmul(partials, hidden)
+    #     hidden = tf.reshape(hidden, [self.num_nodes, self.num_nodes, self.hidden_dim])
 
     #     if FLAGS.sphere_prior:
     #         hidden = tf.nn.l2_normalize(hidden, dim = 1)
 
-    #     hidden = tf.matmul(hidden, tf.transpose(hidden, [0, 2, 1]))
     #     supplement = tf.transpose(tf.matrix_diag_part(tf.transpose(hidden, [2, 1, 0])))
+    #     supplement = tf.squeeze(tf.matmul(hidden, tf.expand_dims(supplement, 2)))
     #     supplement = tf.matrix_band_part(supplement, -1, 0)
     #     supplement += tf.transpose(supplement)
     #     supplement *= FLAGS.autoregressive_scalar
 
 
-    #     outputs = x + supplement
-    #     return outputs
+        # outputs = x + supplement
+        # return outputs
+
+    def _call(self, inputs):
+        z = tf.nn.dropout(inputs, 1-self.dropout)
+
+        # x = tf.transpose(z)
+        # x = tf.matmul(z, x)
+        # x *= (1 - FLAGS.autoregressive_scalar)
+
+        z = tf.tile(z, [self.num_nodes, 1, 1])
+        helper_feature = tf.expand_dims(tf.eye(self.num_nodes), 2)
+        z = tf.concat((z, helper_feature), 2)
+        partials = tf.sparse_reshape(self.partials, (self.num_nodes, self.num_nodes, self.num_nodes))
+        partials = tf.sparse_tensor_to_dense(self.partials)
+
+
+        hidden = matmul3(z, self.vars['weights1'], self.num_nodes)
+        hidden = tf.nn.relu(tf.matmul(partials, hidden))
+        hidden = tf.nn.dropout(hidden, 1-self.auto_dropout)
+        hidden = matmul3(hidden, self.vars['weights2'], self.num_nodes)
+        hidden = tf.matmul(partials, hidden)
+
+        if FLAGS.sphere_prior:
+            hidden = tf.nn.l2_normalize(hidden, dim = 1)
+
+        hidden = tf.matmul(hidden, tf.transpose(hidden, [0, 2, 1]))
+        supplement = tf.transpose(tf.matrix_diag_part(tf.transpose(hidden, [2, 1, 0])))
+        supplement = tf.matrix_band_part(supplement, -1, 0)
+        supplement += tf.transpose(supplement)
+        supplement *= FLAGS.autoregressive_scalar
+
+
+        outputs = x + supplement
+        return outputs
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
