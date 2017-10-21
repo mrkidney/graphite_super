@@ -161,9 +161,11 @@ class GCNModelAuto(GCNModelVAE):
                                        logging=self.logging)(update)
         update = tf.nn.l2_normalize(update, 1)
 
-        z[row] = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * update[row]
-
-        z[row] = tf.nn.l2_normalize(z[row])
+        new_row = (1 - FLAGS.autoregressive_scalar) * z[row] + FLAGS.autoregressive_scalar * update[row]
+        new_row = tf.nn.l2_normalize(new_row, 0)
+        pads = [tf.zeros(self.num_nodes * row), new_row, tf.zeros(self.num_nodes * (self.num_nodes - row - 1))]
+        update = tf.concat(pads, 0)
+        z += tf.reshape(update, [self.num_nodes, self.num_nodes])
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
