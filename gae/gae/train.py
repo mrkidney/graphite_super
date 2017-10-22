@@ -41,7 +41,7 @@ flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph predic
 
 flags.DEFINE_integer('weird', 0, 'you know')
 flags.DEFINE_integer('verbose', 1, 'verboseness')
-flags.DEFINE_integer('mini_batch', 100, 'mini batches of partial graphs')
+flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
@@ -141,7 +141,7 @@ for test in range(10):
     def auto_build(emb, w1, w2):
         z = normalize(emb)
 
-        for row in range(10):
+        for row in range(FLAGS.mini_batch):
             partial_adj = cast(sigmoid(np.dot(z, z.T)))
             partial_norm = preprocess_graph_coo(partial_adj)
 
