@@ -169,16 +169,6 @@ class GCNModelAuto(GCNModelVAE):
                                       dropout=0.,
                                       logging=self.logging)(z)
 
-        # self.decode = AutoregressiveDecoder(input_dim=FLAGS.hidden2,
-        #                               hidden_dim=FLAGS.hidden3,
-        #                               hidden_dim2=FLAGS.hidden4,
-        #                               act=lambda x: x,
-        #                               partials = self.partials,
-        #                               row = self.row,
-        #                               num_nodes = self.n_samples,
-        #                               auto_dropout = self.auto_dropout,
-        #                               logging=self.logging)
-
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 

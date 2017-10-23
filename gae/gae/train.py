@@ -242,9 +242,7 @@ for test in range(10):
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
-                  "val_ap=", "{:.5f}".format(ap_curr),
-                  "test_roc=", "{:.5f}".format(roc_score),
-                  "test_ap=", "{:.5f}".format(ap_score))
+                  "val_ap=", "{:.5f}".format(ap_curr))
 
     arg = np.argmax(val_rocs)
     rocs[test] = test_rocs[arg]
