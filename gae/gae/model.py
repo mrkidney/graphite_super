@@ -52,9 +52,6 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
-        self.adj_label_mini = placeholders['adj_label_mini']
-        self.partials = placeholders['partials']
-        self.row = placeholders['row']
         self.build()
 
     def encoder(self, inputs):
