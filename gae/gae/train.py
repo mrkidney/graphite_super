@@ -146,7 +146,7 @@ for test in range(10):
 
 
     def reconstruct():
-        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, partials, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
