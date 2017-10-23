@@ -127,19 +127,19 @@ class Dense(Layer):
         return self.act(output)
 
 class GraphConvolutionDense(Layer):
-    def __init__(self, input_dim, output_dim, z, dropout=0., act=tf.nn.relu, **kwargs):
-        super(GraphConvolution, self).__init__(**kwargs)
+    def __init__(self, input_dim, output_dim, dropout=0., act=tf.nn.relu, **kwargs):
+        super(GraphConvolutionDense, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
         self.dropout = dropout
-        self.z = z
         self.act = act
 
     def _call(self, inputs):
-        x = inputs
+        x = inputs[0]
+        z = inputs[1]
         x = tf.nn.dropout(x, 1-self.dropout)
         x = tf.matmul(x, self.vars['weights'])
-        x = tf.matmul(tf.transpose(self.z), x)
+        x = tf.matmul(tf.transpose(z), x)
         x = tf.matmul(z, x)
         outputs = self.act(x)
         return outputs
@@ -267,6 +267,5 @@ class InnerProductDecoder(Layer):
         inputs = tf.nn.dropout(inputs, 1-self.dropout)
         x = tf.transpose(inputs)
         x = tf.matmul(inputs, x)
-        x = tf.reshape(x, [-1])
         outputs = self.act(x)
         return outputs

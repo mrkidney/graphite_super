@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 
@@ -34,11 +34,13 @@ flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of aut
 flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
+flags.DEFINE_integer('feedback', 0, '1 for model with feedback')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
+flags.DEFINE_integer('vae', 1, '1 for variational')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
@@ -81,6 +83,7 @@ for test in range(10):
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
+        'noise': tf.placeholder_with_default(1., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=())
     }
 
@@ -92,6 +95,8 @@ for test in range(10):
         model = GCNModelRelnet(placeholders, num_features, num_nodes, features_nonzero)
     elif FLAGS.auto_node:
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
+    elif FLAGS.feedback:
+        model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
@@ -115,6 +120,7 @@ for test in range(10):
         gpu_options = tf.GPUOptions(allow_growth=True)
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
+    #sess.run(tf.local_variables_initializer())
 
 
     def sigmoid(x):
@@ -148,10 +154,11 @@ for test in range(10):
     def reconstruct():
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
+        feed_dict.update({placeholders['noise']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
         if not FLAGS.auto_node:
-            emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+            emb, recon = sess.run([model.z, model.reconstructions], feed_dict=feed_dict)
             return np.reshape(recon, (num_nodes, num_nodes))
 
         emb, w1, w2 = sess.run([model.z_mean, model.w1, model.w2], feed_dict=feed_dict)
@@ -204,8 +211,9 @@ for test in range(10):
 
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+        feed_dict.update({placeholders['noise']: 1.})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
