@@ -38,14 +38,12 @@ def preprocess_graph(adj):
     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return sparse_to_tuple(adj_normalized)
 
-def construct_feed_dict(adj_normalized, adj_label_mini, adj, features, partials, placeholders):
+def construct_feed_dict(adj_normalized, adj, features, placeholders):
     # construct feed dictionary
     feed_dict = dict()
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
-    feed_dict.update({placeholders['adj_label_mini']: adj_label_mini})
-    feed_dict.update({placeholders['partials']: partials})
     return feed_dict
 
 def edge_dropout(adj, dropout):
