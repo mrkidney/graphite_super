@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import Dense, GraphConvolution, GraphConvolutionSparse, GraphConvolutionDense, InnerProductDecoder, AutoregressiveDecoder
+from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -52,7 +52,6 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
-        self.noise = placeholders['noise']
         self.build()
 
     def encoder(self, inputs):
@@ -79,10 +78,10 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-    def get_z(self):
+    def get_z(self, random):
 
-        z = self.z_mean + self.noise * tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not FLAGS.vae:
+        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        if not random:
           z = self.z_mean
 
         if FLAGS.auto_node or FLAGS.sphere_prior:
@@ -95,48 +94,18 @@ class GCNModelVAE(Model):
                                       act=lambda x: x,
                                       dropout=0.,
                                       logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
     def _build(self):
   
         self.encoder(self.inputs)
-        self.z = self.get_z()
-        self.reconstructions = self.decoder(self.z)
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
 
-class GCNModelFeedback(GCNModelVAE):
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
-
-    def decoder(self, z):
-
-        recon = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(z)
-
-        d = tf.reduce_sum(tf.nn.sigmoid(recon), 1)
-        d = tf.expand_dims(tf.pow(d, -0.5), 1)
-        z = d * z
-
-        hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
-                                              output_dim=FLAGS.hidden3,
-                                              act=tf.nn.relu,
-                                              dropout=self.dropout,
-                                              logging=self.logging)((z, z))
-
-        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
-                                              output_dim=FLAGS.hidden4,
-                                              act=lambda x: x,
-                                              dropout=self.dropout,
-                                              logging=self.logging)((hidden1, z))
-
-        if FLAGS.sphere_prior:
-          hidden2 = tf.nn.l2_normalize(hidden2, 1)
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
-                                      act=lambda x: x,
-                                      logging=self.logging)(hidden2)
-
-        return reconstructions
+        self.reconstructions = self.decoder(z)
+        self.reconstructions_noiseless = self.decoder(z_noiseless)
 
 class GCNModelRelnet(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
@@ -158,8 +127,9 @@ class GCNModelRelnet(GCNModelVAE):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
-                                      logging=self.logging)(hidden2)
+                                      logging=self.logging)(z)
 
+        reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
 class GCNModelAuto(GCNModelVAE):
@@ -194,11 +164,13 @@ class GCNModelAuto(GCNModelVAE):
                                       dropout=0.,
                                       logging=self.logging)(z)
 
+        reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
     def _build(self):
   
         self.encoder(self.inputs)
-        z, z_noiseless = self.get_z()
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
 
         self.reconstructions = self.decoder(z)
