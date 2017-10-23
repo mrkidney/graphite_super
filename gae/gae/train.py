@@ -145,7 +145,6 @@ for test in range(10):
 
             z, recon = sess.run([model.new_emb, model.new_reconstructions], feed_dict=feed_dict)
             recon = np.reshape(recon, (num_nodes, num_nodes))
-            recon = np.dot(z, z.T)
         return sigmoid(recon)
 
 
