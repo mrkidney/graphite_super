@@ -137,8 +137,8 @@ class GraphConvolutionDense(Layer):
     def _call(self, inputs):
         x = inputs[0]
         z = inputs[1]
-        #x = tf.nn.dropout(x, 1-self.dropout)
-        x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
+        x = tf.nn.dropout(x, 1-self.dropout)
+        x = tf.matmul(x, self.vars['weights'])
         x = tf.matmul(tf.transpose(z), x)
         x = tf.matmul(z, x)
         outputs = self.act(x)
