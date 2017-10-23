@@ -99,6 +99,7 @@ class GCNModelVAE(Model):
           self.z_noiseless = tf.nn.l2_normalize(self.z_noiseless, dim = 1)
 
         self.reconstructions = self.decoder(z)
+        self.reconstructions_noiseless = self.decoder(self.z_noiseless)
 
 class GCNModelRelnet(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
