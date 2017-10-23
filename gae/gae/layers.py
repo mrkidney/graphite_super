@@ -126,24 +126,6 @@ class Dense(Layer):
 
         return self.act(output)
 
-class GraphConvolutionDense(Layer):
-    def __init__(self, input_dim, output_dim, z, dropout=0., act=tf.nn.relu, **kwargs):
-        super(GraphConvolution, self).__init__(**kwargs)
-        with tf.variable_scope(self.name + '_vars'):
-            self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
-        self.dropout = dropout
-        self.z = z
-        self.act = act
-
-    def _call(self, inputs):
-        x = inputs
-        x = tf.nn.dropout(x, 1-self.dropout)
-        x = tf.matmul(x, self.vars['weights'])
-        x = tf.matmul(tf.transpose(self.z), x)
-        x = tf.matmul(z, x)
-        outputs = self.act(x)
-        return outputs
-
 class GraphConvolution(Layer):
     """Basic graph convolution layer for undirected graph without edge labels."""
     def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu, **kwargs):
