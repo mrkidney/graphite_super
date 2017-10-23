@@ -121,7 +121,7 @@ class GCNModelFeedback(GCNModelVAE):
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
-                                              logging=self.logging)((tf.sparse_tensor_to_dense(self.inputs), z))
+                                              logging=self.logging)((self.inputs, z))
 
         hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
                                               output_dim=FLAGS.hidden4,
