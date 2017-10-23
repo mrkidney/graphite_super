@@ -79,16 +79,6 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-    def get_z(self, random):
-
-        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not random:
-          z = self.z_mean
-
-        if FLAGS.auto_node or FLAGS.sphere_prior:
-          z = tf.nn.l2_normalize(z, dim = 1)
-        return z
-
     def decoder(self, z):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
@@ -102,13 +92,13 @@ class GCNModelVAE(Model):
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
-        if not FLAGS.vae:
-          z = z_noiseless
+        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        self.z_noiseless = self.z_mean
+        if FLAGS.auto_node or FLAGS.sphere_prior:
+          z = tf.nn.l2_normalize(z, dim = 1)
+          self.z_noiseless = tf.nn.l2_normalize(self.z_noiseless, dim = 1)
 
         self.reconstructions = self.decoder(z)
-        self.reconstructions_noiseless = self.decoder(z_noiseless)
 
 class GCNModelRelnet(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
@@ -139,7 +129,7 @@ class GCNModelAuto(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
-    def decoder(self, z, new_emb):
+    def decoder(self, z):
         update = GraphConvolution(input_dim=FLAGS.hidden2,
                                        output_dim=FLAGS.hidden3,
                                        adj=self.adj,
@@ -158,23 +148,24 @@ class GCNModelAuto(GCNModelVAE):
         z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
         z = tf.nn.l2_normalize(z, 1)
 
-        if new_emb:
-          self.emb = z
-
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
                                       dropout=0.,
                                       logging=self.logging)(z)
 
         reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
+        return reconstructions, z
 
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        self.z_noiseless = self.get_z(random = False)
+        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        self.z_noiseless = self.z_mean
+        if FLAGS.auto_node or FLAGS.sphere_prior:
+          z = tf.nn.l2_normalize(z, dim = 1)
+          self.z_noiseless = tf.nn.l2_normalize(self.z_noiseless, dim = 1)
 
-        self.reconstructions = self.decoder(z, False)
-        self.new_reconstructions = self.decoder(self.emb, True)
+        self.reconstructions, _ = self.decoder(z)
+        self.reconstructions_noiseless, _ = self.decoder(self.z_noiseless)
+        self.new_reconstructions, self.new_emb = self.decoder(self.emb)
 

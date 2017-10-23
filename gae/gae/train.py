@@ -136,31 +136,29 @@ for test in range(10):
         y[x >= FLAGS.threshold] = 1
         return y
 
-    def auto_build(z):
-
+    def auto_build(z, recon):
         for row in range(FLAGS.mini_batch):
-            partial_adj = cast(sigmoid(np.dot(z, z.T)))
-            partial_norm = preprocess_graph_coo(partial_adj)
+            partial_adj = cast(sigmoid(recon))
+            partial_norm = preprocess_graph(partial_adj)
 
             feed_dict = construct_feed_dict(partial_norm, z, adj_label, features, placeholders)
             feed_dict.update({placeholders['dropout']: 0.})
             feed_dict.update({placeholders['auto_dropout']: 0.})
 
-            z = sess.run([model.emb], feed_dict=feed_dict)
-        return sigmoid(np.dot(z, z.T))
+            z, recon = sess.run([model.new_emb, model.new_reconstructions], feed_dict=feed_dict)
+            recon = np.reshape(recon, (num_nodes, num_nodes))
+        return sigmoid(recon)
 
 
     def reconstruct():
         feed_dict = construct_feed_dict(adj_norm, dummy_emb, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
-
+        emb, recon = sess.run([model.z_noiseless, model.reconstructions_noiseless], feed_dict=feed_dict)
+        recon = np.reshape(recon, (num_nodes, num_nodes))
         if not FLAGS.auto_node:
-            emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-            return np.reshape(recon, (num_nodes, num_nodes))
-
-        emb = sess.run([model.z_noiseless], feed_dict=feed_dict)
-        return auto_build(emb)
+            return recon
+        return auto_build(emb, recon)
 
 
 
