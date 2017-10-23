@@ -52,9 +52,7 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
-        self.adj_label_mini = placeholders['adj_label_mini']
-        self.partials = placeholders['partials']
-        self.row = placeholders['row']
+        self.emb = placeholders['emb']
         self.build()
 
     def encoder(self, inputs):
@@ -141,28 +139,27 @@ class GCNModelAuto(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
-    def decoder(self, z):
-        l1 = GraphConvolution(input_dim=FLAGS.hidden2,
+    def decoder(self, z, new_emb):
+        update = GraphConvolution(input_dim=FLAGS.hidden2,
                                        output_dim=FLAGS.hidden3,
                                        adj=self.adj,
                                        act=tf.nn.relu,
                                        dropout=self.dropout,
-                                       logging=self.logging)
+                                       logging=self.logging)(z)
 
-        update = l1(z)
-        self.w1 = l1.vars['weights']
-        l2 = GraphConvolution(input_dim=FLAGS.hidden3,
+        update = GraphConvolution(input_dim=FLAGS.hidden3,
                                        output_dim=FLAGS.hidden2,
                                        adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.auto_dropout,
-                                       logging=self.logging)
-        self.w2 = l2.vars['weights']
-        update = l2(update)
+                                       logging=self.logging)(update)
         update = tf.nn.l2_normalize(update, 1)
 
         z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
         z = tf.nn.l2_normalize(z, 1)
+
+        if new_emb:
+          self.emb = z
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
@@ -176,8 +173,8 @@ class GCNModelAuto(GCNModelVAE):
   
         self.encoder(self.inputs)
         z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
-        if not FLAGS.vae:
-          z = z_noiseless
+        self.z_noiseless = self.get_z(random = False)
 
-        self.reconstructions = self.decoder(z)
+        self.reconstructions = self.decoder(z, False)
+        self.new_reconstructions = self.decoder(self.emb, True)
+

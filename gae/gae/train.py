@@ -53,7 +53,6 @@ if FLAGS.seeded:
 
 dataset_str = FLAGS.dataset
 
-# Load data
 adj, features = load_data(dataset_str)
 
 adj_def = adj
@@ -87,15 +86,14 @@ for test in range(10):
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
         'adj': tf.sparse_placeholder(tf.float32),
+        'emb': tf.placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
-        'adj_label_mini': tf.sparse_placeholder(tf.float32),
-        'partials': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
-        'auto_dropout': tf.placeholder_with_default(0., shape=()),
-        'row': tf.placeholder_with_default(0, shape=())
+        'auto_dropout': tf.placeholder_with_default(0., shape=())
     }
 
     num_nodes = adj.shape[0]
+    dummy_emb = np.zeros((num_nodes, FLAGS.hidden2))
 
     # Create model
     model = None
@@ -138,26 +136,22 @@ for test in range(10):
         y[x >= FLAGS.threshold] = 1
         return y
 
-    def auto_build(emb, w1, w2):
-        z = normalize(emb)
+    def auto_build(z):
 
         for row in range(FLAGS.mini_batch):
             partial_adj = cast(sigmoid(np.dot(z, z.T)))
             partial_norm = preprocess_graph_coo(partial_adj)
 
-            hidden = np.dot(z, w1)
-            hidden = relu(partial_norm.dot(hidden))
-            hidden = np.dot(hidden, w2)
-            hidden = partial_norm.dot(hidden)
-            hidden = normalize(hidden)
+            feed_dict = construct_feed_dict(partial_norm, z, adj_label, features, placeholders)
+            feed_dict.update({placeholders['dropout']: 0.})
+            feed_dict.update({placeholders['auto_dropout']: 0.})
 
-            z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden
-            z = normalize(z)
+            z = sess.run([model.emb], feed_dict=feed_dict)
         return sigmoid(np.dot(z, z.T))
 
 
     def reconstruct():
-        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, partials, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, dummy_emb, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
@@ -165,8 +159,8 @@ for test in range(10):
             emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
             return np.reshape(recon, (num_nodes, num_nodes))
 
-        emb, w1, w2 = sess.run([model.z_mean, model.w1, model.w2], feed_dict=feed_dict)
-        return auto_build(emb, w1, w2)
+        emb = sess.run([model.z_noiseless], feed_dict=feed_dict)
+        return auto_build(emb)
 
 
 
@@ -209,22 +203,13 @@ for test in range(10):
 
         if FLAGS.edge_dropout > 0:
             adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
-            adj_label_mini = adj_train_mini + sp.eye(adj_train_mini.shape[0])
-            adj_label_mini = sparse_to_tuple(adj_label_mini)
             adj_norm_mini = preprocess_graph(adj_train_mini)
         else:
-            adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
-        row = 0
-        if FLAGS.auto_node:
-            row = np.random.choice(len(partials))
-            #partials = sparse_to_tuple(partials[row])
-
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
+        feed_dict = construct_feed_dict(adj_norm_mini, dummy_emb, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        feed_dict.update({placeholders['row']: row})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]
@@ -249,7 +234,7 @@ for test in range(10):
     aps[test] = test_aps[arg]
 
     if FLAGS.verbose:
-        print(arg)
+        print(arg + 1)
         print(test_rocs[arg])
         print(test_aps[arg])
         break
