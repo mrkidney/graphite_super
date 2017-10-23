@@ -34,9 +34,11 @@ flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of aut
 flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
+flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
+flags.DEFINE_integer('weird', 0, 'you know')
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
 
@@ -73,6 +75,11 @@ for test in range(10):
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
     adj = adj_train
 
+    if FLAGS.auto_node:
+        partials = preprocess_partials(adj)
+    else:
+        partials = sparse_to_tuple(adj)
+
     adj_norm = preprocess_graph(adj)
 
     # Define placeholders
@@ -80,8 +87,11 @@ for test in range(10):
         'features': tf.sparse_placeholder(tf.float32),
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
+        'adj_label_mini': tf.sparse_placeholder(tf.float32),
+        'partials': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
-        'auto_dropout': tf.placeholder_with_default(0., shape=())
+        'auto_dropout': tf.placeholder_with_default(0., shape=()),
+        'row': tf.placeholder_with_default(0, shape=())
     }
 
     num_nodes = adj.shape[0]
@@ -198,11 +208,19 @@ for test in range(10):
 
         if FLAGS.edge_dropout > 0:
             adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
+            adj_label_mini = adj_train_mini + sp.eye(adj_train_mini.shape[0])
+            adj_label_mini = sparse_to_tuple(adj_label_mini)
             adj_norm_mini = preprocess_graph(adj_train_mini)
         else:
+            adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
+        row = 0
+        if FLAGS.auto_node:
+            row = np.random.choice(len(partials))
+            #partials = sparse_to_tuple(partials[row])
+
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
         feed_dict.update({placeholders['row']: row})
