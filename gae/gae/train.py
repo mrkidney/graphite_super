@@ -135,7 +135,6 @@ for test in range(10):
 
     def auto_build(z, recon):
         for row in range(FLAGS.mini_batch):
-            recon = np.dot(z, z.T)
             partial_adj = cast(sigmoid(recon))
             partial_norm = preprocess_graph(partial_adj)
 
