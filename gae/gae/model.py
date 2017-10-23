@@ -103,7 +103,8 @@ class GCNModelVAE(Model):
         self.encoder(self.inputs)
         z = self.get_z(random = True)
         z_noiseless = self.get_z(random = False)
-        z = z_noiseless
+        if not FLAGS.vae:
+          z = z_noiseless
 
         self.reconstructions = self.decoder(z)
         self.reconstructions_noiseless = self.decoder(z_noiseless)
@@ -173,6 +174,7 @@ class GCNModelAuto(GCNModelVAE):
         self.encoder(self.inputs)
         z = self.get_z(random = True)
         z_noiseless = self.get_z(random = False)
-        z = z_noiseless
+        if not FLAGS.vae:
+          z = z_noiseless
 
         self.reconstructions = self.decoder(z)
