@@ -117,11 +117,11 @@ class GCNModelFeedback(GCNModelVAE):
         d = tf.expand_dims(tf.pow(d, -0.5), 1)
         z = d * z
 
-        hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
+        hidden1 = GraphConvolutionDense(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
-                                              logging=self.logging)((z, z))
+                                              logging=self.logging)((self.inputs, z))
 
         hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
                                               output_dim=FLAGS.hidden4,
