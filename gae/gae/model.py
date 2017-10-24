@@ -115,7 +115,8 @@ class GCNModelFeedback(GCNModelVAE):
 
     def decoder(self, z):
         recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-
+        d = tf.reduce_sum(recon, 1)
+        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
         hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
