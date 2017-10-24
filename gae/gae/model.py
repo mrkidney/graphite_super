@@ -129,6 +129,8 @@ class GCNModelFeedback(GCNModelVAE):
                                               dropout=self.dropout,
                                               logging=self.logging)((hidden1, recon)) 
 
+        hidden2 = tf.l2_normalize(hidden2, 1)
+
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
                                       logging=self.logging)(hidden2)
