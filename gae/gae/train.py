@@ -75,11 +75,6 @@ for test in range(10):
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
     adj = adj_train
 
-    if FLAGS.auto_node:
-        partials = preprocess_partials(adj)
-    else:
-        partials = sparse_to_tuple(adj)
-
     adj_norm = preprocess_graph(adj)
 
     # Define placeholders
@@ -88,10 +83,8 @@ for test in range(10):
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'adj_label_mini': tf.sparse_placeholder(tf.float32),
-        'partials': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
-        'row': tf.placeholder_with_default(0, shape=())
     }
 
     num_nodes = adj.shape[0]
@@ -156,7 +149,7 @@ for test in range(10):
 
 
     def reconstruct():
-        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, partials, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
@@ -215,15 +208,9 @@ for test in range(10):
             adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
-        row = 0
-        if FLAGS.auto_node:
-            row = np.random.choice(len(partials))
-            #partials = sparse_to_tuple(partials[row])
-
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, partials, placeholders)
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        feed_dict.update({placeholders['row']: row})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         avg_cost = outs[1]
