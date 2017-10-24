@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 

@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder
+from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder, GraphConvolutionDense
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -115,6 +115,7 @@ class GCNModelFeedback(GCNModelVAE):
 
     def decoder(self, z):
         recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
+
 
         hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
