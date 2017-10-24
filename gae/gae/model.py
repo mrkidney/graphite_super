@@ -78,11 +78,9 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-    def get_z(self, random):
+    def get_z(self):
 
         z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not random:
-          z = self.z_mean
 
         if FLAGS.auto_node or FLAGS.sphere_prior:
           z = tf.nn.l2_normalize(z, dim = 1)
@@ -101,8 +99,8 @@ class GCNModelVAE(Model):
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
+        z = self.get_z()
+        z_noiseless = self.get_z()
         if not FLAGS.vae:
           z = z_noiseless
 
@@ -172,8 +170,8 @@ class GCNModelAuto(GCNModelVAE):
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
+        z = self.get_z()
+        z_noiseless = self.get_z()
         if not FLAGS.vae:
           z = z_noiseless
 
