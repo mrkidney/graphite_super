@@ -38,7 +38,6 @@ flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
-flags.DEFINE_integer('weird', 0, 'you know')
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
 
@@ -82,7 +81,6 @@ for test in range(10):
         'features': tf.sparse_placeholder(tf.float32),
         'adj': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
-        'adj_label_mini': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
     }
@@ -149,7 +147,7 @@ for test in range(10):
 
 
     def reconstruct():
-        feed_dict = construct_feed_dict(adj_norm, adj_label, adj_label, features, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
 
@@ -201,14 +199,11 @@ for test in range(10):
 
         if FLAGS.edge_dropout > 0:
             adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
-            adj_label_mini = adj_train_mini + sp.eye(adj_train_mini.shape[0])
-            adj_label_mini = sparse_to_tuple(adj_label_mini)
             adj_norm_mini = preprocess_graph(adj_train_mini)
         else:
-            adj_label_mini = adj_label
             adj_norm_mini = adj_norm
 
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_label_mini, adj_label, features, placeholders)
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
