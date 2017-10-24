@@ -109,6 +109,32 @@ class GCNModelVAE(Model):
         self.reconstructions = self.decoder(z)
         self.reconstructions_noiseless = self.decoder(z_noiseless)
 
+class GCNModelFeedback(GCNModelVAE):
+    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
+        super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
+
+    def decoder(self, z):
+        recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
+
+        hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
+                                              output_dim=FLAGS.hidden3,
+                                              act=tf.nn.relu,
+                                              dropout=self.dropout,
+                                              logging=self.logging)((z, recon)) 
+
+        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
+                                              output_dim=FLAGS.hidden4,
+                                              act=lambda x: x,
+                                              dropout=self.dropout,
+                                              logging=self.logging)((hidden1, recon)) 
+
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
+                                      act=lambda x: x,
+                                      logging=self.logging)(z)
+
+        reconstructions = tf.reshape(reconstructions, [-1])
+        return reconstructions
+
 class GCNModelRelnet(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelRelnet, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)

@@ -34,6 +34,7 @@ flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of aut
 flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
+flags.DEFINE_integer('feedback', 0, '1 for feedback')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
@@ -93,6 +94,8 @@ for test in range(10):
         model = GCNModelRelnet(placeholders, num_features, num_nodes, features_nonzero)
     elif FLAGS.auto_node:
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
+    elif FLAGS.feedback:
+        model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
@@ -206,7 +209,7 @@ for test in range(10):
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl, model.z, model.z_noiseless, model.z_mean], feed_dict=feed_dict)
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
