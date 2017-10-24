@@ -131,7 +131,7 @@ class GCNModelFeedback(GCNModelVAE):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
-                                      logging=self.logging)(z)
+                                      logging=self.logging)(hidden2)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
@@ -156,7 +156,7 @@ class GCNModelRelnet(GCNModelVAE):
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
-                                      logging=self.logging)(z)
+                                      logging=self.logging)(hidden2)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
