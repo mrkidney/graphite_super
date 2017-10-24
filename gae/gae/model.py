@@ -133,7 +133,7 @@ class GCNModelFeedback(GCNModelVAE):
         hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
         hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
-        hidden2 = tf.nn.l2_normalize(z, 1)
+        hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
                                       act=lambda x: x,
