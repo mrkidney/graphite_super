@@ -100,7 +100,8 @@ class GCNModelVAE(Model):
   
         self.encoder(self.inputs)
         z = self.get_z()
-        z_noiseless = self.get_z()
+        z_noiseless = self.z_mean
+        z_noiseless = tf.nn.l2_normalize(z_noiseless, dim = 1)
         if not FLAGS.vae:
           z = z_noiseless
 
