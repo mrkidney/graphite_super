@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 
@@ -35,6 +35,7 @@ flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be 
 flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
 flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('feedback', 0, '1 for feedback')
+flags.DEFINE_integer('feedback_input', 0, '1 for feedback_input')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
@@ -96,6 +97,8 @@ for test in range(10):
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
     elif FLAGS.feedback:
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
+    elif FLAGS.feedback_input:
+        model = GCNModelFeedbackInput(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
