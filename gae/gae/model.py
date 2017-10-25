@@ -84,8 +84,7 @@ class GCNModelVAE(Model):
 
         z = self.z_mean + self.noise * tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
 
-        if FLAGS.auto_node or FLAGS.sphere_prior:
-          z = tf.nn.l2_normalize(z, dim = 1)
+        z = tf.nn.l2_normalize(z, dim = 1)
         return z
 
     def decoder(self, z):
