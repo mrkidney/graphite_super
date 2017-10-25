@@ -35,7 +35,7 @@ flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
-flags.DEFINE_integer('feedback_loops', 1, 'loops of intermediate embeddings')
+flags.DEFINE_integer('feedback_loops', 2, 'loops of intermediate embeddings')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
@@ -223,7 +223,7 @@ for test in range(10):
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
         if FLAGS.anneal:
-            temp += FLAGS.autoregressive_scalar / FLAGS.epochs
+            temp = min(FLAGS.autoregressive_scalar, 1.0 * epoch / FLAGS.epochs)
         else:
             temp = FLAGS.autoregressive_scalar
 
