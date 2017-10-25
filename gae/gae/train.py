@@ -86,6 +86,7 @@ for test in range(10):
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
         'noise': tf.placeholder_with_default(1., shape=()),
+        'temp': tf.placeholder_with_default(0., shape=()),
     }
 
     num_nodes = adj.shape[0]
@@ -124,6 +125,7 @@ for test in range(10):
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
+    temp = 0.0
 
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
@@ -158,6 +160,7 @@ for test in range(10):
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
         feed_dict.update({placeholders['noise']: 0.})
+        feed_dict.update({placeholders['temp']: temp})
 
         if not FLAGS.auto_node:
             emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
@@ -215,7 +218,10 @@ for test in range(10):
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
         feed_dict.update({placeholders['noise']: 1.})
+        feed_dict.update({placeholders['temp']: temp})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
+
+        temp += FLAGS.autoregressive_scalar / FLAGS.epochs
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]

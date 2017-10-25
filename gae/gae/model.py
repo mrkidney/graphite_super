@@ -53,6 +53,7 @@ class GCNModelVAE(Model):
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
         self.noise = placeholders['noise']
+        self.temp = placeholders['temp']
         self.build()
 
     def encoder(self, inputs):
@@ -165,7 +166,8 @@ class GCNModelFeedback(GCNModelVAE):
 
         hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
-        hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
+        #hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
+        hidden2 = (1 - self.temp) * z + self.temp * hidden2
         hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
