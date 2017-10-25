@@ -163,7 +163,7 @@ for test in range(10):
         feed_dict.update({placeholders['noise']: 0.})
         feed_dict.update({placeholders['temp']: temp})
 
-        if not FLAGS.auto_node:
+        if model_str != 'auto':
             emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
             return np.reshape(recon, (num_nodes, num_nodes))
 
