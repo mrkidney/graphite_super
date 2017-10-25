@@ -52,6 +52,7 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
+        self.noise = placeholders['noise']
         self.build()
 
     def encoder(self, inputs):
@@ -78,11 +79,9 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-    def get_z(self, random):
+    def get_z(self):
 
-        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not random:
-          z = self.z_mean
+        z = self.z_mean + self.noise * tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
 
         if FLAGS.auto_node or FLAGS.sphere_prior:
           z = tf.nn.l2_normalize(z, dim = 1)
@@ -102,12 +101,13 @@ class GCNModelVAE(Model):
   
         self.encoder(self.inputs)
         z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
-        if not FLAGS.vae:
-          z = z_noiseless
+        # z_noiseless = self.get_z(random = False)
+        # if not FLAGS.vae:
+        #   z = z_noiseless
 
         self.reconstructions = self.decoder(z)
-        self.reconstructions_noiseless = self.decoder(z_noiseless)
+        #self.reconstructions_noiseless = self.decoder(z_noiseless)
+        self.reconstructions_noiseless = self.reconstructions
 
 class GCNModelFeedbackInput(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
