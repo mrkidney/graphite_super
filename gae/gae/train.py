@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput, GCNModelDoubleFeedback
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 
@@ -31,20 +31,17 @@ flags.DEFINE_integer('hidden4', 7, 'Number of units in hidden layer 4.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
 flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of autoregressive to final link prediction')
-flags.DEFINE_integer('sphere_prior', 0, '1 for normalizing the embeddings to be near sphere surface')
-flags.DEFINE_integer('relnet', 0, '1 for relational network between embeddings to predict edges')
-flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
-flags.DEFINE_integer('feedback', 0, '1 for feedback')
-flags.DEFINE_integer('feedback_input', 0, '1 for feedback_input')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
+flags.DEFINE_integer('feedback_loops', 1, 'loops of intermediate embeddings')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
+flags.DEFINE_string('model', 'vgae', 'Model string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
@@ -53,6 +50,7 @@ if FLAGS.seeded:
     np.random.seed(1)
 
 dataset_str = FLAGS.dataset
+model_str = FLAGS.model
 
 # Load data
 adj, features = load_data(dataset_str)
@@ -94,14 +92,16 @@ for test in range(10):
 
     # Create model
     model = None
-    if FLAGS.relnet:
+    if model_str == 'relnet':
         model = GCNModelRelnet(placeholders, num_features, num_nodes, features_nonzero)
-    elif FLAGS.auto_node:
+    elif model_str == 'auto':
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
-    elif FLAGS.feedback:
+    elif model_str == 'feedback':
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
-    elif FLAGS.feedback_input:
+    elif model_str == 'feedback_input':
         model = GCNModelFeedbackInput(placeholders, num_features, num_nodes, features_nonzero)
+    elif model_str == 'double_feedback':
+        model = GCNModelDoubleFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
