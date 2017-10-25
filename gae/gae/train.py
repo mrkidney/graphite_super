@@ -84,7 +84,6 @@ for test in range(10):
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'auto_dropout': tf.placeholder_with_default(0., shape=()),
-        'noise': tf.placeholder_with_default(1., shape=()),
         'temp': tf.placeholder_with_default(0., shape=()),
     }
 
@@ -160,7 +159,6 @@ for test in range(10):
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         feed_dict.update({placeholders['auto_dropout']: 0.})
-        feed_dict.update({placeholders['noise']: 0.})
         feed_dict.update({placeholders['temp']: temp})
 
         if model_str != 'auto':
@@ -218,7 +216,6 @@ for test in range(10):
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
-        feed_dict.update({placeholders['noise']: 1.})
         feed_dict.update({placeholders['temp']: temp})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 

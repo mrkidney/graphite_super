@@ -52,7 +52,6 @@ class GCNModelVAE(Model):
         self.dropout = placeholders['dropout']
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
-        self.noise = placeholders['noise']
         self.temp = placeholders['temp']
         self.build()
 
@@ -80,9 +79,11 @@ class GCNModelVAE(Model):
                                           dropout=self.dropout,
                                           logging=self.logging)(hidden1)
 
-    def get_z(self):
+    def get_z(self, random):
 
-        z = self.z_mean + self.noise * tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
+        if not random:
+          z = self.z_mean
 
         z = tf.nn.l2_normalize(z, dim = 1)
         return z
@@ -100,14 +101,13 @@ class GCNModelVAE(Model):
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z()
-        # z_noiseless = self.get_z(random = False)
-        # if not FLAGS.vae:
-        #   z = z_noiseless
+        z = self.get_z(random = True)
+        z_noiseless = self.get_z(random = False)
+        if not FLAGS.vae:
+          z = z_noiseless
 
         self.reconstructions = self.decoder(z)
-        #self.reconstructions_noiseless = self.decoder(z_noiseless)
-        self.reconstructions_noiseless = self.reconstructions
+        self.reconstructions_noiseless = self.decoder(z_noiseless)
 
 class GCNModelFeedbackInput(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
@@ -167,7 +167,8 @@ class GCNModelDoubleFeedback(GCNModelVAE):
           update = l2((update, recon))
           update = tf.nn.l2_normalize(update, 1)
 
-          update = (1 - self.temp) * z + self.temp * update
+          update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
+          #update = (1 - self.temp) * z + self.temp * update
           update = tf.nn.l2_normalize(update, 1)
           z = update
 
@@ -201,8 +202,8 @@ class GCNModelFeedback(GCNModelVAE):
 
         hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
-        #hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
-        hidden2 = (1 - self.temp) * z + self.temp * hidden2
+        hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
+        #hidden2 = (1 - self.temp) * z + self.temp * hidden2
         hidden2 = tf.nn.l2_normalize(hidden2, 1)
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
