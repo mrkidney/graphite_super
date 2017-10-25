@@ -100,7 +100,7 @@ class GCNModelVAE(Model):
     def _build(self):
   
         self.encoder(self.inputs)
-        z = self.get_z(random = True)
+        z = self.get_z()
         # z_noiseless = self.get_z(random = False)
         # if not FLAGS.vae:
         #   z = z_noiseless
