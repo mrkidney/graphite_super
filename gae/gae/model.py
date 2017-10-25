@@ -149,7 +149,6 @@ class GCNModelFeedback(GCNModelVAE):
 
     def decoder(self, z):
         recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-        recon += tf.eye(self.n_samples)
         d = tf.reduce_sum(recon, 1)
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
