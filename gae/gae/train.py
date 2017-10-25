@@ -37,6 +37,7 @@ flags.DEFINE_integer('auto_node', 0, '1 for autoregressive by node')
 flags.DEFINE_integer('feedback', 0, '1 for feedback')
 flags.DEFINE_integer('feedback_input', 0, '1 for feedback_input')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
+flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 
@@ -221,7 +222,10 @@ for test in range(10):
         feed_dict.update({placeholders['temp']: temp})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.kl], feed_dict=feed_dict)
 
-        temp += FLAGS.autoregressive_scalar / FLAGS.epochs
+        if FLAGS.anneal:
+            temp += FLAGS.autoregressive_scalar / FLAGS.epochs
+        else:
+            temp = FLAGS.autoregressive_scalar
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
