@@ -118,33 +118,37 @@ class GCNModelFeedbackInput(GCNModelVAE):
         d = tf.reduce_sum(recon, 1)
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-        hidden1 = GraphConvolutionDense(input_dim=self.input_dim,
+        l1 = GraphConvolutionDense(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
-                                              logging=self.logging)((tf.sparse_tensor_to_dense(self.inputs), recon)) 
+                                              logging=self.logging)
 
-        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
+        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
                                               output_dim=FLAGS.hidden2,
                                               act=lambda x: x,
                                               dropout=self.dropout,
-                                              logging=self.logging)((hidden1, recon)) 
+                                              logging=self.logging)
+        for i in range(FLAGS.feedback_loops):
+          update = l1((inputs, recon))
+          update = l2((update, recon))
+          update = tf.nn.l2_normalize(update, 1)
 
-        hidden2 = tf.nn.l2_normalize(hidden2, 1)
+          update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
+          #update = (1 - self.temp) * z + self.temp * update
+          update = tf.nn.l2_normalize(update, 1)
+          z = update
 
-        hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
-        hidden2 = tf.nn.l2_normalize(hidden2, 1)
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
+        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
-                                      logging=self.logging)(hidden2)
+                                      logging=self.logging)(update)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
 
-class GCNModelDoubleFeedback(GCNModelVAE):
+class GCNModelFeedback(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelDoubleFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
+        super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
         recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
@@ -175,40 +179,6 @@ class GCNModelDoubleFeedback(GCNModelVAE):
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
                                       logging=self.logging)(update)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
-class GCNModelFeedback(GCNModelVAE):
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
-
-    def decoder(self, z):
-        recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-        d = tf.reduce_sum(recon, 1)
-        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
-
-        hidden1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
-                                              output_dim=FLAGS.hidden3,
-                                              act=tf.nn.relu,
-                                              dropout=self.dropout,
-                                              logging=self.logging)((z, recon)) 
-
-        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
-                                              output_dim=FLAGS.hidden2,
-                                              act=lambda x: x,
-                                              dropout=self.dropout,
-                                              logging=self.logging)((hidden1, recon)) 
-
-        hidden2 = tf.nn.l2_normalize(hidden2, 1)
-
-        hidden2 = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * hidden2
-        #hidden2 = (1 - self.temp) * z + self.temp * hidden2
-        hidden2 = tf.nn.l2_normalize(hidden2, 1)
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden4,
-                                      act=lambda x: x,
-                                      logging=self.logging)(hidden2)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions

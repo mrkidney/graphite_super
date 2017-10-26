@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput, GCNModelDoubleFeedback
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 
@@ -35,7 +35,7 @@ flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
-flags.DEFINE_integer('feedback_loops', 2, 'loops of intermediate embeddings')
+flags.DEFINE_integer('feedback_loops', 1, 'loops of intermediate embeddings')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
@@ -99,8 +99,6 @@ for test in range(10):
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
     elif model_str == 'feedback_input':
         model = GCNModelFeedbackInput(placeholders, num_features, num_nodes, features_nonzero)
-    elif model_str == 'double_feedback':
-        model = GCNModelDoubleFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
