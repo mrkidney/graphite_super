@@ -130,7 +130,7 @@ class GCNModelFeedbackInput(GCNModelVAE):
                                               dropout=self.dropout,
                                               logging=self.logging)
         for i in range(FLAGS.feedback_loops):
-          update = l1((inputs, recon))
+          update = l1((self.inputs, recon))
           update = l2((update, recon))
           update = tf.nn.l2_normalize(update, 1)
 
