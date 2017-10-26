@@ -15,7 +15,7 @@ from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
 from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback, GCNModelFeedbackInput
+from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
 from preprocessing import preprocess_partials
 
@@ -98,8 +98,6 @@ for test in range(10):
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
     elif model_str == 'feedback':
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
-    elif model_str == 'feedback_input':
-        model = GCNModelFeedbackInput(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 
