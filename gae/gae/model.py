@@ -144,7 +144,7 @@ class GCNModelFeedback(GCNModelVAE):
           elif FLAGS.feedback_input == 'input':
             new_input = tf.sparse_tensor_to_dense(self.inputs)
           elif FLAGS.feedback_input == 'both':
-            new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), dim = 1)
+            new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), 1)
 
           update = l1((new_input, recon))
           update = l2((update, recon))
