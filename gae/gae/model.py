@@ -109,53 +109,20 @@ class GCNModelVAE(Model):
         self.reconstructions = self.decoder(z)
         self.reconstructions_noiseless = self.decoder(z_noiseless)
 
-class GCNModelFeedbackInput(GCNModelVAE):
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelFeedbackInput, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
-
-    def decoder(self, z):
-        recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-        d = tf.reduce_sum(recon, 1)
-        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
-
-        l1 = GraphConvolutionDense(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden3,
-                                              act=tf.nn.relu,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
-
-        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
-                                              output_dim=FLAGS.hidden2,
-                                              act=lambda x: x,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
-        for i in range(FLAGS.feedback_loops):
-          update = l1((tf.sparse_tensor_to_dense(self.inputs), recon))
-          update = l2((update, recon))
-          update = tf.nn.l2_normalize(update, 1)
-
-          update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
-          #update = (1 - self.temp) * z + self.temp * update
-          update = tf.nn.l2_normalize(update, 1)
-          z = update
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(update)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
 class GCNModelFeedback(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-        d = tf.reduce_sum(recon, 1)
-        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-        l1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
+        if FLAGS.feedback_input = 'z':
+          input_dim = FLAGS.hidden2
+        elif FLAGS.feedback_input = 'input':
+          input_dim = self.input_dim
+        elif FLAGS.feedback_input = 'both':
+          input_dim = self.input_dim + FLAGS.hidden2
+
+        l1 = GraphConvolutionDense(input_dim=input_dim,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
@@ -167,7 +134,19 @@ class GCNModelFeedback(GCNModelVAE):
                                               dropout=self.dropout,
                                               logging=self.logging)
         for i in range(FLAGS.feedback_loops):
-          update = l1((z, recon))
+
+          recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
+          d = tf.reduce_sum(recon, 1)
+          recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
+
+          if FLAGS.feedback_input = 'z':
+            new_input = z
+          elif FLAGS.feedback_input = 'input':
+            new_input = tf.sparse_tensor_to_dense(self.inputs)
+          elif FLAGS.feedback_input = 'both':
+            new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), dim = 1)
+
+          update = l1((new_input, recon))
           update = l2((update, recon))
           update = tf.nn.l2_normalize(update, 1)
 

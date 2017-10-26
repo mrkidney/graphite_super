@@ -36,6 +36,7 @@ flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 flags.DEFINE_integer('feedback_loops', 1, 'loops of intermediate embeddings')
+flags.DEFINE_string('feedback_input', 'z', 'z or input or both as feedback layer inputs')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
