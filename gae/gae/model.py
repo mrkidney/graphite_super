@@ -115,11 +115,11 @@ class GCNModelFeedback(GCNModelVAE):
 
     def decoder(self, z):
 
-        if FLAGS.feedback_input = 'z':
+        if FLAGS.feedback_input == 'z':
           input_dim = FLAGS.hidden2
-        elif FLAGS.feedback_input = 'input':
+        elif FLAGS.feedback_input == 'input':
           input_dim = self.input_dim
-        elif FLAGS.feedback_input = 'both':
+        elif FLAGS.feedback_input == 'both':
           input_dim = self.input_dim + FLAGS.hidden2
 
         l1 = GraphConvolutionDense(input_dim=input_dim,
@@ -139,11 +139,11 @@ class GCNModelFeedback(GCNModelVAE):
           d = tf.reduce_sum(recon, 1)
           recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-          if FLAGS.feedback_input = 'z':
+          if FLAGS.feedback_input == 'z':
             new_input = z
-          elif FLAGS.feedback_input = 'input':
+          elif FLAGS.feedback_input == 'input':
             new_input = tf.sparse_tensor_to_dense(self.inputs)
-          elif FLAGS.feedback_input = 'both':
+          elif FLAGS.feedback_input == 'both':
             new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), dim = 1)
 
           update = l1((new_input, recon))
