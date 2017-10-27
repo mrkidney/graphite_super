@@ -125,7 +125,7 @@ class GCNModelFeedback(GCNModelVAE):
         l1 = GraphConvolutionDense(input_dim=input_dim,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
-                                              dropout=self.dropout,
+                                              dropout=0.,
                                               logging=self.logging)
 
         l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
