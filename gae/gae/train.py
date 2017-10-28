@@ -40,6 +40,7 @@ flags.DEFINE_string('feedback_input', 'z', 'z or input or both as feedback layer
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
+flags.DEFINE_integer('save', 0, '1 to save final embeddings for future visualization')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'vgae', 'Model string.')
@@ -158,20 +159,15 @@ for test in range(10):
         feed_dict.update({placeholders['auto_dropout']: 0.})
         feed_dict.update({placeholders['temp']: temp})
 
-        if model_str != 'auto':
-            emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-            return np.reshape(recon, (num_nodes, num_nodes))
-
-        emb, w1, w2 = sess.run([model.z_mean, model.w1, model.w2], feed_dict=feed_dict)
-        return auto_build(emb, w1, w2)
+        emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+        return (emb, np.reshape(recon, (num_nodes, num_nodes)))
 
 
 
 
-    def get_roc_score(edges_pos, edges_neg, adj_rec = None):
+    def get_roc_score(edges_pos, edges_neg):
 
-        if adj_rec is None:
-            adj_rec = reconstruct()
+        emb, adj_rec = reconstruct()
 
         preds = []
         pos = []
@@ -190,7 +186,7 @@ for test in range(10):
         roc_score = roc_auc_score(labels_all, preds_all)
         ap_score = average_precision_score(labels_all, preds_all)
 
-        return roc_score, ap_score
+        return roc_score, ap_score, emb
 
 
 
@@ -200,6 +196,7 @@ for test in range(10):
     val_rocs = np.zeros(FLAGS.epochs)
     test_rocs = np.zeros(FLAGS.epochs)
     test_aps = np.zeros(FLAGS.epochs)
+    test_embs = np.zeros(FLAGS.epochs)
 
     # Train model
     for epoch in range(FLAGS.epochs):
@@ -227,11 +224,12 @@ for test in range(10):
         if model_str == "auto" and (epoch + 1) % 50 != 0:
             continue
 
-        roc_curr, ap_curr = get_roc_score(val_edges, val_edges_false)
+        roc_curr, ap_curr, _ = get_roc_score(val_edges, val_edges_false)
         val_rocs[epoch] = roc_curr
-        roc_score, ap_score = get_roc_score(test_edges, test_edges_false)
+        roc_score, ap_score, emb = get_roc_score(test_edges, test_edges_false)
         test_rocs[epoch] = roc_score
         test_aps[epoch] = ap_score
+        test_embs[epoch] = emb
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
@@ -248,6 +246,8 @@ for test in range(10):
         print(arg)
         print(test_rocs[arg])
         print(test_aps[arg])
+        if FLAGS.save:
+            np.save("emb", test_embs[arg])
         break
 if not FLAGS.verbose:
     print((np.mean(rocs), np.std(rocs)))
