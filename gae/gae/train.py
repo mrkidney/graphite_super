@@ -196,7 +196,7 @@ for test in range(10):
     val_rocs = np.zeros(FLAGS.epochs)
     test_rocs = np.zeros(FLAGS.epochs)
     test_aps = np.zeros(FLAGS.epochs)
-    test_embs = np.zeros(FLAGS.epochs)
+    test_embs = []
 
     # Train model
     for epoch in range(FLAGS.epochs):
@@ -229,7 +229,7 @@ for test in range(10):
         roc_score, ap_score, emb = get_roc_score(test_edges, test_edges_false)
         test_rocs[epoch] = roc_score
         test_aps[epoch] = ap_score
-        test_embs[epoch] = emb
+        test_embs.append(emb)
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
