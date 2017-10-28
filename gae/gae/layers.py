@@ -138,9 +138,11 @@ class GraphConvolutionDense(Layer):
     def _call(self, inputs):
         x = inputs[0]
         adj = inputs[1]
+        z = inputs[2]
         x = tf.nn.dropout(x, 1-self.dropout)
         x = tf.matmul(x, self.vars['weights'])
         x = tf.matmul(adj, x)
+        x = tf.concat((x, tf.matmul(z, self.vars['weights'])), 1)
         outputs = self.act(x)
         return outputs
 

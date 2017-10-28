@@ -122,7 +122,7 @@ class GCNModelFeedback(GCNModelVAE):
         elif FLAGS.feedback_input == 'both':
           input_dim = self.input_dim + FLAGS.hidden2
 
-        l1 = GraphConvolutionDense(input_dim=input_dim,
+        l1 = GraphConvolutionDense(input_dim=input_dim + FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=0.,
@@ -146,9 +146,8 @@ class GCNModelFeedback(GCNModelVAE):
           elif FLAGS.feedback_input == 'both':
             new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), 1)
 
-          update = l1((new_input, recon))
-          update = tf.concat((update, z), 1)
-          update = l2((update, recon))
+          update = l1((new_input, recon, z))
+          update = l2((update, recon, z))
           update = tf.nn.l2_normalize(update, 1)
 
           update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
