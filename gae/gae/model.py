@@ -128,7 +128,7 @@ class GCNModelFeedback(GCNModelVAE):
                                               dropout=0.,
                                               logging=self.logging)
 
-        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
+        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3 + FLAGS.hidden2,
                                               output_dim=FLAGS.hidden2,
                                               act=lambda x: x,
                                               dropout=self.dropout,
@@ -147,6 +147,7 @@ class GCNModelFeedback(GCNModelVAE):
             new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), 1)
 
           update = l1((new_input, recon))
+          update = tf.concat((update, z), 1)
           update = l2((update, recon))
           update = tf.nn.l2_normalize(update, 1)
 
