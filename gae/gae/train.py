@@ -115,7 +115,7 @@ for test in range(10):
 
     os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
     if FLAGS.gpu == -1:
-        sess = tf.Session()
+        sess = tf.Session(config=tf.ConfigProto(device_count = {'GPU': 0}))
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
         gpu_options = tf.GPUOptions(allow_growth=True)

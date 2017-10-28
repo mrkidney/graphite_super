@@ -132,18 +132,18 @@ class GraphConvolutionDense(Layer):
         super(GraphConvolutionDense, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
-            self.vars['skip'] = weight_variable_glorot(FLAGS.hidden2, output_dim, name="skip")
+            #self.vars['skip'] = weight_variable_glorot(FLAGS.hidden2, output_dim, name="skip")
         self.dropout = dropout
         self.act = act
 
     def _call(self, inputs):
         x = inputs[0]
         adj = inputs[1]
-        z = inputs[2]
+        #z = inputs[2]
         x = tf.nn.dropout(x, 1-self.dropout)
         x = tf.matmul(x, self.vars['weights'])
         x = tf.matmul(adj, x)
-        x += tf.matmul(z, self.vars['skip'])
+        #x += tf.matmul(z, self.vars['skip'])
         outputs = self.act(x)
         return outputs
 
