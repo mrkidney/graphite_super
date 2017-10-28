@@ -122,13 +122,13 @@ class GCNModelFeedback(GCNModelVAE):
         elif FLAGS.feedback_input == 'both':
           input_dim = self.input_dim + FLAGS.hidden2
 
-        l1 = GraphConvolutionDense(input_dim=input_dim + FLAGS.hidden2,
+        l1 = GraphConvolutionDense(input_dim=input_dim,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=0.,
                                               logging=self.logging)
 
-        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3 + FLAGS.hidden2,
+        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
                                               output_dim=FLAGS.hidden2,
                                               act=lambda x: x,
                                               dropout=self.dropout,
