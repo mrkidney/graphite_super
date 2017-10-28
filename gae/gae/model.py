@@ -85,7 +85,6 @@ class GCNModelVAE(Model):
         if not random:
           z = self.z_mean
 
-        z = tf.nn.l2_normalize(z, dim = 1)
         return z
 
     def decoder(self, z):
@@ -114,6 +113,7 @@ class GCNModelFeedback(GCNModelVAE):
         super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
+        z = tf.nn.l2_normalize(z, dim = 1)
 
         if FLAGS.feedback_input == 'z':
           input_dim = FLAGS.hidden2
