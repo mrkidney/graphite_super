@@ -13,8 +13,53 @@ def parse_index_file(filename):
         index.append(int(line.strip()))
     return index
 
+def load_protein():
+    n = sp.io.loadmat("Homo_sapiens.mat")
+    return n['network'], n['group']
+
+def load_enzyme():
+    adj = sp.lil_matrix((125, 125))
+    features = sp.lil_matrix((125, 1))
+    for line in open("data/ENZYMES_g296.edges"):
+        vals = line.split()
+        x = int(vals[0]) - 1
+        y = int(vals[1]) - 1
+        adj[x, y] = 1
+    return adj, features
+
+def load_florida():
+    adj = sp.lil_matrix((128, 128))
+    features = sp.lil_matrix((128, 1))
+    for line in open("data/eco-florida.edges"):
+        vals = line.split()
+        x = int(vals[0]) - 1
+        y = int(vals[1]) - 1
+        val = float(vals[2])
+        adj[x, y] = val
+    return adj, features
+
+def load_brain():
+    adj = sp.lil_matrix((1780, 1780))
+    features = sp.lil_matrix((1780, 1))
+    nums = []
+    for line in open("data/bn-fly-drosophila_medulla_1.edges"):
+        vals = line.split()
+        x = int(vals[0]) - 1
+        y = int(vals[1]) - 1
+        adj[x, y] = 1
+    return adj, features
+
 
 def load_data(dataset):
+    if dataset == 'florida':
+        return load_florida()
+    elif dataset == 'brain':
+        return load_brain()
+    elif dataset == 'enzyme':
+        return load_enzyme()
+    elif dataset == 'protein':
+        return load_protein()
+
     # load the data: x, tx, allx, graph
     names = ['x', 'tx', 'allx', 'graph']
     objects = []
