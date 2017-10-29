@@ -137,7 +137,7 @@ class GCNModelFeedback(GCNModelVAE):
 
           recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
           d = tf.reduce_sum(recon, 1)
-          d = tf.pow(recon, -0.5)
+          d = tf.pow(d, -0.5)
           recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
           if FLAGS.feedback_input == 'z':
