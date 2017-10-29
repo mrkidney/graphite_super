@@ -4,7 +4,7 @@ import networkx as nx
 import scipy.sparse as sp
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 
 
 def parse_index_file(filename):
@@ -38,20 +38,20 @@ def load_data(dataset):
 
     return adj, features
 
-def visualize_data():
-    #Currently using stuff from Citeseer with no features
-    emb = np.load("emb.npy")
-    labels = np.load("labels.npy")
-    labels = np.dot(labels, np.arange(6))
+# def visualize_data():
+#     #Currently using stuff from Citeseer with no features
+#     emb = np.load("emb.npy")
+#     labels = np.load("labels.npy")
+#     labels = np.dot(labels, np.arange(6))
 
-    color_labels = 1.0 * np.arange(6)
-    rgb_values = sns.color_palette("hls", 6)
-    labels = [rgb_values[int(label)] for label in labels]
+#     color_labels = 1.0 * np.arange(6)
+#     rgb_values = sns.color_palette("hls", 6)
+#     labels = [rgb_values[int(label)] for label in labels]
 
-    emb_2D = TSNE(perplexity = 50, early_exaggeration = 3.0, verbose = 2, learning_rate = 20.0, n_iter = 5000, n_iter_without_progress = 1000).fit_transform(emb)
-    plt.scatter(emb_2D[:,0], emb_2D[:,1], s = 5, color = labels)
-    plt.show()
-    plt.close()
+#     emb_2D = TSNE(perplexity = 50, early_exaggeration = 3.0, verbose = 2, learning_rate = 20.0, n_iter = 5000, n_iter_without_progress = 1000).fit_transform(emb)
+#     plt.scatter(emb_2D[:,0], emb_2D[:,1], s = 5, color = labels)
+#     plt.show()
+#     plt.close()
 
 
 
