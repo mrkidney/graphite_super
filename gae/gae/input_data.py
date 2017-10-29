@@ -22,8 +22,8 @@ def load_enzyme():
     features = sp.lil_matrix((125, 1))
     for line in open("data/ENZYMES_g296.edges"):
         vals = line.split()
-        x = int(vals[0]) - 1
-        y = int(vals[1]) - 1
+        x = int(vals[0]) - 2
+        y = int(vals[1]) - 2
         adj[x, y] = 1
     return adj, features
 
