@@ -118,7 +118,7 @@ for test in range(10):
 
     os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
     if FLAGS.gpu == -1:
-        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
         sess = tf.Session()
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
