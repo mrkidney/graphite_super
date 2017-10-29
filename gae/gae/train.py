@@ -14,10 +14,9 @@ from sklearn.metrics import average_precision_score
 from sklearn.preprocessing import normalize
 
 from optimizer import OptimizerAE, OptimizerVAE
-from gae.input_data import load_data
-from model import GCNModelRelnet, GCNModelVAE, GCNModelAuto, GCNModelFeedback
-from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges, edge_dropout, preprocess_graph_coo
-from preprocessing import preprocess_partials
+from input_data import *
+from model import *
+from preprocessing import *
 
 # Settings
 flags = tf.app.flags
@@ -47,6 +46,9 @@ flags.DEFINE_string('model', 'vgae', 'Model string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
+
+visualize_data()
+sys.exit()
 
 if FLAGS.seeded:
     np.random.seed(1)
@@ -116,7 +118,8 @@ for test in range(10):
 
     os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
     if FLAGS.gpu == -1:
-        sess = tf.Session(config=tf.ConfigProto(device_count = {'GPU': 0}))
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        sess = tf.Session()
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
         gpu_options = tf.GPUOptions(allow_growth=True)
