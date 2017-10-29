@@ -77,6 +77,10 @@ rocs = np.zeros(10)
 aps = np.zeros(10)
 for test in range(10):
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+    val_edges = tuple(zip(*val_edges))
+    val_edges_false = tuple(zip(*val_edges_false))
+    test_edges = tuple(zip(*test_edges))
+    test_edges_false = tuple(zip(*test_edges_false))
     adj = adj_train
 
     adj_norm = preprocess_graph(adj)
@@ -172,17 +176,20 @@ for test in range(10):
 
         emb, adj_rec = reconstruct()
 
-        preds = []
-        pos = []
-        for e in edges_pos:
-            preds.append(sigmoid(adj_rec[e[0], e[1]]))
-            pos.append(adj_orig[e[0], e[1]])
+        # preds = []
+        # pos = []
+        # for e in edges_pos:
+        #     preds.append(sigmoid(adj_rec[e[0], e[1]]))
+        #     pos.append(adj_orig[e[0], e[1]])
 
-        preds_neg = []
-        neg = []
-        for e in edges_neg:
-            preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
-            neg.append(adj_orig[e[0], e[1]])
+        preds = sigmoid(adj_rec[edges_pos])
+        preds_neg = sigmoid(adj_rec[edges_neg])
+
+        # preds_neg = []
+        # neg = []
+        # for e in edges_neg:
+        #     preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
+        #     neg.append(adj_orig[e[0], e[1]])
 
         preds_all = np.hstack([preds, preds_neg])
         labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
