@@ -47,8 +47,8 @@ flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
 
-visualize_data()
-sys.exit()
+# visualize_data()
+# sys.exit()
 
 if FLAGS.seeded:
     np.random.seed(1)
