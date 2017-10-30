@@ -47,7 +47,7 @@ def load_brain():
         vals = line.split()
         x = int(vals[0]) - 1
         y = int(vals[1]) - 1
-        adj[x, y] = 1
+        adj[x, y] = adj[x, y] + 1
     return adj, features
 
 
