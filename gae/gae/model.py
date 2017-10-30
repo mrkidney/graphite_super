@@ -82,7 +82,7 @@ class GCNModelVAE(Model):
     def get_z(self, random):
 
         z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
-        if not random:
+        if not random or not FLAGS.vae:
           z = self.z_mean
 
         return z
