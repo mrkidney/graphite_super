@@ -106,6 +106,8 @@ for test in range(FLAGS.test_count):
         model = GCNModelAuto(placeholders, num_features, num_nodes, features_nonzero)
     elif model_str == 'feedback':
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
+    elif model_str == 'feedbackun':
+        model = GCNModelFeedbackUn(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModelVAE(placeholders, num_features, num_nodes, features_nonzero)
 

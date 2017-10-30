@@ -35,6 +35,9 @@ class OptimizerVAE(object):
 
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
 
+        if FLAGS.model == 'feedbackun':
+            self.cost += norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=model.inter_reconstruction, targets=labels_sub, pos_weight=pos_weight))
+
         # Latent loss
         self.log_lik = self.cost
 
