@@ -39,6 +39,7 @@ flags.DEFINE_string('feedback_input', 'z', 'z or input or both as feedback layer
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('mini_batch', 10, 'mini batches of partial graphs')
+flags.DEFINE_integer('test_count', 10, 'batch of tests')
 flags.DEFINE_integer('save', 0, '1 to save final embeddings for future visualization')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -73,9 +74,9 @@ features = sparse_to_tuple(features.tocoo())
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
-rocs = np.zeros(10)
-aps = np.zeros(10)
-for test in range(10):
+rocs = np.zeros(FLAGS.test_count)
+aps = np.zeros(FLAGS.test_count)
+for test in range(FLAGS.test_count):
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
     val_edges = tuple(zip(*val_edges))
     val_edges_false = tuple(zip(*val_edges_false))

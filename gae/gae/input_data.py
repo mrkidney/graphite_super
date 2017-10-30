@@ -2,6 +2,7 @@ import numpy as np
 import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
+import scipy.io as io
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 # import seaborn as sns
@@ -14,7 +15,7 @@ def parse_index_file(filename):
     return index
 
 def load_protein():
-    n = sp.io.loadmat("Homo_sapiens.mat")
+    n = io.loadmat("data/Homo_sapiens.mat")
     return n['network'], n['group']
 
 def load_enzyme():
