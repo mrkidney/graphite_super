@@ -25,7 +25,7 @@ def load_enzyme():
         vals = line.split()
         x = int(vals[0]) - 2
         y = int(vals[1]) - 2
-        adj[x, y] = 1
+        adj[y, x] = adj[x, y] = 1
     return adj, features
 
 def load_florida():
@@ -36,7 +36,7 @@ def load_florida():
         x = int(vals[0]) - 1
         y = int(vals[1]) - 1
         val = float(vals[2])
-        adj[x, y] = val
+        adj[y, x] = adj[x, y] = val
     return adj, features
 
 def load_brain():
@@ -47,7 +47,7 @@ def load_brain():
         vals = line.split()
         x = int(vals[0]) - 1
         y = int(vals[1]) - 1
-        adj[x, y] = adj[x, y] + 1
+        adj[y, x] = adj[x, y] = adj[x, y] + 1
     return adj, features
 
 

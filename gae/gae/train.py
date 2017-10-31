@@ -47,13 +47,14 @@ flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'vgae', 'Model string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
+flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
 # visualize_data()
 # sys.exit()
 
 if FLAGS.seeded:
     np.random.seed(1)
+    tf.set_random_seed(1)
 
 dataset_str = FLAGS.dataset
 model_str = FLAGS.model
