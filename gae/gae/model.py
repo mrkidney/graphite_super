@@ -162,7 +162,8 @@ class GCNModelFeedback(GCNModelVAE):
         super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        z = tf.nn.l2_normalize(z, dim = 1)
+        if FLAGS.normalize:
+          z = tf.nn.l2_normalize(z, dim = 1)
 
         if FLAGS.feedback_input == 'z':
           input_dim = FLAGS.hidden2
@@ -198,11 +199,13 @@ class GCNModelFeedback(GCNModelVAE):
 
           update = l1((new_input, recon, z))
           update = l2((update, recon, z))
-          update = tf.nn.l2_normalize(update, 1)
+          if FLAGS.normalize:
+            update = tf.nn.l2_normalize(update, 1)
 
           update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
-          #update = (1 - self.temp) * z + self.temp * update
-          update = tf.nn.l2_normalize(update, 1)
+          # update = (1 - self.temp) * z + self.temp * update
+          if FLAGS.normalize:
+            update = tf.nn.l2_normalize(update, 1)
           z = update
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
