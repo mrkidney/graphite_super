@@ -54,7 +54,7 @@ flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
 if FLAGS.seeded:
     np.random.seed(1)
-    tf.set_random_seed(1)
+    #tf.set_random_seed(1)
 
 dataset_str = FLAGS.dataset
 model_str = FLAGS.model
