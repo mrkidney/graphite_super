@@ -165,14 +165,14 @@ class GCNModelFeedback(GCNModelVAE):
         if FLAGS.normalize:
           z = tf.nn.l2_normalize(z, dim = 1)
 
-        if FLAGS.feedback_input == 'z':
-          input_dim = FLAGS.hidden2
-        elif FLAGS.feedback_input == 'input':
-          input_dim = self.input_dim
-        elif FLAGS.feedback_input == 'both':
-          input_dim = self.input_dim + FLAGS.hidden2
+        l0 = GraphConvolutionDense(input_dim=self.input_dim,
+                                      output_dim=FLAGS.hidden3,
+                                      sparse_inputs = True,
+                                      act=tf.nn.relu,
+                                      dropout=0.,
+                                      logging=self.logging)
 
-        l1 = GraphConvolutionDense(input_dim=input_dim,
+        l1 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
                                               output_dim=FLAGS.hidden3,
                                               act=tf.nn.relu,
                                               dropout=0.,
@@ -191,13 +191,12 @@ class GCNModelFeedback(GCNModelVAE):
           recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
           if FLAGS.feedback_input == 'z':
-            new_input = z
+            update = l1((z, recon, z))
           elif FLAGS.feedback_input == 'input':
-            new_input = tf.sparse_tensor_to_dense(self.inputs)
+            update = l0((self.inputs, recon, z))
           elif FLAGS.feedback_input == 'both':
-            new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), 1)
+            update = l1((z, recon, z)) + l0((self.inputs, recon, z))
 
-          update = l1((new_input, recon, z))
           update = l2((update, recon, z))
           if FLAGS.normalize:
             update = tf.nn.l2_normalize(update, 1)
