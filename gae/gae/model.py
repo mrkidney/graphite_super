@@ -53,6 +53,7 @@ class GCNModelVAE(Model):
         self.auto_dropout = placeholders['auto_dropout']
         self.adj_label = placeholders['adj_orig']
         self.temp = placeholders['temp']
+        self.weight_norm = 0
         self.build()
 
     def encoder(self, inputs):
@@ -183,6 +184,7 @@ class GCNModelFeedback(GCNModelVAE):
                                               act=lambda x: x,
                                               dropout=self.dropout,
                                               logging=self.logging)
+        self.weight_norm = tf.nn.l2_loss(l0.vars['weights']) + tf.nn.l2_loss(l1.vars['weights']) + tf.nn.l2_loss(l2.vars['weights'])
         for i in range(FLAGS.feedback_loops):
 
           recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))

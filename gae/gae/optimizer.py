@@ -42,6 +42,9 @@ class OptimizerVAE(object):
             self.kl = (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_log_std - tf.square(model.z_mean) - tf.square(tf.exp(model.z_log_std)), 1))
             self.cost -= self.kl
 
+        if FLAGS.weight_decay > 0.0:
+            self.cost += FLAGS.weight_decay * model.weight_norm
+
         if FLAGS.model == 'feedbackun':
             self.cost = (1 - FLAGS.autoregressive_scalar) * self.cost + FLAGS.autoregressive_scalar * norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=model.inter_reconstruction, targets=labels_sub, pos_weight=pos_weight))
 
