@@ -13,6 +13,9 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 from sklearn.preprocessing import normalize
 
+from sklearn import manifold
+from scipy.special import expit
+
 from optimizer import OptimizerAE, OptimizerVAE
 from input_data import *
 from model import *
@@ -50,8 +53,6 @@ flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
-# visualize_data()
-# sys.exit()
 
 if FLAGS.seeded:
     np.random.seed(1)
@@ -79,7 +80,7 @@ features_nonzero = features[1].shape[0]
 
 rocs = np.zeros(FLAGS.test_count)
 aps = np.zeros(FLAGS.test_count)
-for test in range(FLAGS.test_count):
+
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
     val_edges = tuple(zip(*val_edges))
     val_edges_false = tuple(zip(*val_edges_false))
@@ -89,6 +90,7 @@ for test in range(FLAGS.test_count):
 
     adj_norm = preprocess_graph(adj)
 
+for test in range(FLAGS.test_count):
     # Define placeholders
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
@@ -213,6 +215,33 @@ for test in range(FLAGS.test_count):
     test_rocs = np.zeros(FLAGS.epochs)
     test_aps = np.zeros(FLAGS.epochs)
     test_embs = []
+
+    # roc = np.zeros(10)
+    # ap = np.zeros(10)
+    # for k in range(10):
+
+    #     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+    #     val_edges = tuple(zip(*val_edges))
+    #     val_edges_false = tuple(zip(*val_edges_false))
+    #     test_edges = tuple(zip(*test_edges))
+    #     test_edges_false = tuple(zip(*test_edges_false))
+    #     adj = adj_train
+
+    #     z = manifold.spectral_embedding(adj, n_components=128, random_state=k)
+    #     adj_rec = np.dot(z, z.T)
+
+    #     preds = sigmoid(adj_rec[test_edges])
+    #     preds_neg = sigmoid(adj_rec[test_edges_false])
+
+    #     preds_all = np.hstack([preds, preds_neg])
+    #     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+    #     roc_score = roc_auc_score(labels_all, preds_all)
+    #     ap_score = average_precision_score(labels_all, preds_all)
+    #     roc[k] = roc_score
+    #     ap[k] = ap_score
+    # print((np.mean(roc), np.std(roc)))
+    # print((np.mean(ap), np.std(ap)))    
+    # sys.exit()
 
     # Train model
     for epoch in range(FLAGS.epochs):
