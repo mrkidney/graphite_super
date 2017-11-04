@@ -81,14 +81,14 @@ features_nonzero = features[1].shape[0]
 rocs = np.zeros(FLAGS.test_count)
 aps = np.zeros(FLAGS.test_count)
 
-    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
-    val_edges = tuple(zip(*val_edges))
-    val_edges_false = tuple(zip(*val_edges_false))
-    test_edges = tuple(zip(*test_edges))
-    test_edges_false = tuple(zip(*test_edges_false))
-    adj = adj_train
+adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+val_edges = tuple(zip(*val_edges))
+val_edges_false = tuple(zip(*val_edges_false))
+test_edges = tuple(zip(*test_edges))
+test_edges_false = tuple(zip(*test_edges_false))
+adj = adj_train
 
-    adj_norm = preprocess_graph(adj)
+adj_norm = preprocess_graph(adj)
 
 for test in range(FLAGS.test_count):
     # Define placeholders
