@@ -51,7 +51,7 @@ flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'vgae', 'Model string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
+flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
 
 if FLAGS.seeded:
@@ -81,16 +81,17 @@ features_nonzero = features[1].shape[0]
 rocs = np.zeros(FLAGS.test_count)
 aps = np.zeros(FLAGS.test_count)
 
-adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
-val_edges = tuple(zip(*val_edges))
-val_edges_false = tuple(zip(*val_edges_false))
-test_edges = tuple(zip(*test_edges))
-test_edges_false = tuple(zip(*test_edges_false))
-adj = adj_train
-
-adj_norm = preprocess_graph(adj)
-
 for test in range(FLAGS.test_count):
+    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+    val_edges = tuple(zip(*val_edges))
+    val_edges_false = tuple(zip(*val_edges_false))
+    test_edges = tuple(zip(*test_edges))
+    test_edges_false = tuple(zip(*test_edges_false))
+    adj = adj_train
+
+    adj_norm = preprocess_graph(adj)
+
+
     # Define placeholders
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
