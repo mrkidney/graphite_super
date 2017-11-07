@@ -27,8 +27,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.02, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 300, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 14, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 10, 'Number of units in hidden layer 3.')
+flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
+flags.DEFINE_integer('hidden3', 32, 'Number of units in hidden layer 3.')
 flags.DEFINE_integer('hidden4', 7, 'Number of units in hidden layer 4.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('edge_dropout', 0.15, 'Dropout for individual edges in training graph')
@@ -166,7 +166,7 @@ for test in range(FLAGS.test_count):
     adj_label = adj_train + sp.eye(adj_train.shape[0])
     adj_label = sparse_to_tuple(adj_label)
 
-    val_rocs = np.zeros(FLAGS.epochs)
+    val_metrics = np.zeros(FLAGS.epochs)
     test_rocs = np.zeros(FLAGS.epochs)
     test_aps = np.zeros(FLAGS.epochs)
     test_embs = []
@@ -195,7 +195,7 @@ for test in range(FLAGS.test_count):
         avg_accuracy = outs[2]
 
         roc_curr, ap_curr, _ = get_roc_score(val_edges, val_edges_false)
-        val_rocs[epoch] = roc_curr
+        val_metrics[epoch] = roc_curr + ap_curr
         roc_score, ap_score, emb = get_roc_score(test_edges, test_edges_false)
         test_rocs[epoch] = roc_score
         test_aps[epoch] = ap_score
@@ -208,7 +208,7 @@ for test in range(FLAGS.test_count):
                   "test_roc=", "{:.5f}".format(roc_score),
                   "test_ap=", "{:.5f}".format(ap_score))
 
-    arg = np.argmax(val_rocs)
+    arg = np.argmax(val_metrics)
     rocs[test] = test_rocs[arg]
     aps[test] = test_aps[arg]
 
