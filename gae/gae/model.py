@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, AutoregressiveDecoder, GraphConvolutionDense
+from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, GraphConvolutionDense
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -109,55 +109,6 @@ class GCNModelVAE(Model):
         self.reconstructions = self.decoder(z)
         self.reconstructions_noiseless = self.decoder(z_noiseless)
 
-class GCNModelFeedbackUn(GCNModelVAE):
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelFeedbackUn, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
-
-    def decoder(self, z):
-        if FLAGS.feedback_input == 'z':
-          input_dim = FLAGS.hidden2
-        elif FLAGS.feedback_input == 'input':
-          input_dim = self.input_dim
-        elif FLAGS.feedback_input == 'both':
-          input_dim = self.input_dim + FLAGS.hidden2
-
-        l1 = GraphConvolutionDense(input_dim=input_dim,
-                                              output_dim=FLAGS.hidden3,
-                                              act=tf.nn.relu,
-                                              dropout=0.,
-                                              logging=self.logging)
-
-        l2 = GraphConvolutionDense(input_dim=FLAGS.hidden3,
-                                              output_dim=FLAGS.hidden2,
-                                              act=lambda x: x,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
-        self.inter_reconstruction = tf.matmul(z, tf.transpose(z))
-        recon = tf.nn.sigmoid(self.inter_reconstruction)
-        self.inter_reconstruction = tf.reshape(self.inter_reconstruction, [-1])
-        d = tf.reduce_sum(recon, 1)
-        d = tf.pow(d, -0.5)
-        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
-
-        if FLAGS.feedback_input == 'z':
-          new_input = z
-        elif FLAGS.feedback_input == 'input':
-          new_input = tf.sparse_tensor_to_dense(self.inputs)
-        elif FLAGS.feedback_input == 'both':
-          new_input = tf.concat((tf.sparse_tensor_to_dense(self.inputs), z), 1)
-
-        update = l1((new_input, recon, z))
-        update = l2((update, recon, z))
-
-        z = update
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(update)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
 class GCNModelFeedback(GCNModelVAE):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
         super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
@@ -240,48 +191,3 @@ class GCNModelRelnet(GCNModelVAE):
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions
-
-class GCNModelAuto(GCNModelVAE):
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
-        super(GCNModelAuto, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
-
-    def decoder(self, z):
-        l1 = GraphConvolution(input_dim=FLAGS.hidden2,
-                                       output_dim=FLAGS.hidden3,
-                                       adj=self.adj,
-                                       act=tf.nn.relu,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
-
-        update = l1(z)
-        self.w1 = l1.vars['weights']
-        l2 = GraphConvolution(input_dim=FLAGS.hidden3,
-                                       output_dim=FLAGS.hidden2,
-                                       adj=self.adj,
-                                       act=lambda x: x,
-                                       dropout=self.auto_dropout,
-                                       logging=self.logging)
-        self.w2 = l2.vars['weights']
-        update = l2(update)
-        update = tf.nn.l2_normalize(update, 1)
-
-        z = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
-        z = tf.nn.l2_normalize(z, 1)
-
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      dropout=0.,
-                                      logging=self.logging)(z)
-
-        reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
-
-    def _build(self):
-  
-        self.encoder(self.inputs)
-        z = self.get_z(random = True)
-        z_noiseless = self.get_z(random = False)
-        if not FLAGS.vae:
-          z = z_noiseless
-
-        self.reconstructions = self.decoder(z)
