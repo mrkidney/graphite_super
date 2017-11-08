@@ -89,6 +89,8 @@ class GCNModelVAE(Model):
         return z
 
     def decoder(self, z):
+        if FLAGS.normalize:
+          z = tf.nn.l2_normalize(z, dim = 1)     
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,

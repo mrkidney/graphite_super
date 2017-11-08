@@ -40,7 +40,7 @@ flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive
 flags.DEFINE_float('threshold', 0.75, 'Threshold for autoregressive graph prediction')
 flags.DEFINE_integer('feedback_loops', 1, 'loops of intermediate embeddings')
 flags.DEFINE_string('feedback_input', 'z', 'z or input or both as feedback layer inputs')
-flags.DEFINE_integer('normalize', 1, 'normalize embeddings?')
+flags.DEFINE_integer('normalize', 0, 'normalize embeddings?')
 flags.DEFINE_float('weight_decay', 0.0, 'decay on weight l2 norm')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
