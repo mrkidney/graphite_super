@@ -186,7 +186,7 @@ for test in range(FLAGS.test_count):
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         feed_dict.update({placeholders['auto_dropout']: FLAGS.auto_dropout})
         feed_dict.update({placeholders['temp']: temp})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, model.weight_norm], feed_dict=feed_dict)
 
         if FLAGS.anneal:
             temp = min(FLAGS.autoregressive_scalar, 1.0 * epoch / FLAGS.epochs)
@@ -208,7 +208,8 @@ for test in range(FLAGS.test_count):
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
                   "val_ap=", "{:.5f}".format(ap_curr),
                   "test_roc=", "{:.5f}".format(roc_score),
-                  "test_ap=", "{:.5f}".format(ap_score))
+                  "test_ap=", "{:.5f}".format(ap_score),
+                  "weight=", "{:.5f}".format(outs[3]))
 
     arg = np.argmax(val_metrics)
     rocs[test] = test_rocs[arg]
