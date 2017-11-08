@@ -114,7 +114,6 @@ class GraphConvolutionDense(Layer):
         x = inputs[0]
         adj = inputs[1]
         #z = inputs[2]
-        x = tf.nn.dropout(x, 1-self.dropout)
         if self.sparse_inputs:
             x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
         else:
