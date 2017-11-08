@@ -116,8 +116,6 @@ class GCNModelFeedback(GCNModelVAE):
         super(GCNModelFeedback, self).__init__(placeholders, num_features, num_nodes, features_nonzero, **kwargs)
 
     def decoder(self, z):
-        if FLAGS.normalize:
-          z = tf.nn.l2_normalize(z, dim = 1)
 
         l0 = GraphConvolutionDense(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden3,
@@ -138,29 +136,22 @@ class GCNModelFeedback(GCNModelVAE):
                                               dropout=self.dropout,
                                               logging=self.logging)
         self.weight_norm = tf.nn.l2_loss(l1.vars['weights']) + tf.nn.l2_loss(l2.vars['weights'])
-        for i in range(FLAGS.feedback_loops):
+        
+        znorm = z
+        if FLAGS.normalize:
+          znorm = tf.nn.l2_normalize(z, dim = 1)
+        recon = tf.nn.sigmoid(tf.matmul(znorm, tf.transpose(znorm)))
+        d = tf.reduce_sum(recon, 1)
+        d = tf.pow(d, -0.5)
+        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-          recon = tf.nn.sigmoid(tf.matmul(z, tf.transpose(z)))
-          d = tf.reduce_sum(recon, 1)
-          d = tf.pow(d, -0.5)
-          recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
+        update = l1((z, recon, z)) + l0((self.inputs, recon, z))
+        update = l2((update, recon, z))
 
-          if FLAGS.feedback_input == 'z':
-            update = l1((z, recon, z))
-          elif FLAGS.feedback_input == 'input':
-            update = l0((self.inputs, recon, z))
-          elif FLAGS.feedback_input == 'both':
-            update = l1((z, recon, z)) + l0((self.inputs, recon, z))
-
-          update = l2((update, recon, z))
-          if FLAGS.normalize:
-            update = tf.nn.l2_normalize(update, 1)
-
-          update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
-          # update = (1 - self.temp) * z + self.temp * update
-          if FLAGS.normalize:
-            update = tf.nn.l2_normalize(update, 1)
-          z = update
+        update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
+        if FLAGS.normalize:
+          update = tf.nn.l2_normalize(update, 1)
+        z = update
 
         reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
