@@ -8,6 +8,7 @@ import sys
 import tensorflow as tf
 import numpy as np
 import scipy.sparse as sp
+import scipy.stats as stats
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
@@ -221,5 +222,5 @@ for test in range(FLAGS.test_count):
             np.save("emb", test_embs[arg])
         break
 if not FLAGS.verbose:
-    print((np.mean(rocs), np.std(rocs)))
-    print((np.mean(aps), np.std(aps)))
+    print((np.mean(rocs), stats.sem(rocs)))
+    print((np.mean(aps), stats.sem(aps)))
