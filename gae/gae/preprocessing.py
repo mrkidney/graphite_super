@@ -56,7 +56,7 @@ def pick_edges(graph, count):
         u, v = G_edges[i]
         G.remove_edge(u, v)
 
-        if True and nx.has_path(G, u, v):
+        if True or nx.has_path(G, u, v):
             edges.append([u, v])
         else:
             G.add_edge(u, v)
