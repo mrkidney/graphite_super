@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+import networkx as nx
 
 
 def sparse_to_tuple(sparse_mx):
@@ -45,6 +46,70 @@ def construct_feed_dict(adj_normalized, adj, features, placeholders):
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
     return feed_dict
+
+def pick_edges(graph, count):
+    G = nx.Graph(graph)
+    edges = []
+    while len(edges) < count:
+        G_edges = G.edges()
+        i = np.random.randint(len(G_edges))
+        u, v = G_edges[i]
+        G.remove_edge(u, v)
+
+        if True and nx.has_path(G, u, v):
+            edges.append([u, v])
+        else:
+            G.add_edge(u, v)
+    return edges
+
+def pick_false_edges(graph, count):
+    G = nx.Graph(graph)
+    edges = []
+    while len(edges) < count:
+        G_nodes = G.nodes()
+        i = np.random.randint(len(G_nodes))
+        j = np.random.randint(len(G_nodes))
+        u = G_nodes[i]
+        v = G_nodes[j]
+
+        if v not in G.neighbors(u) + [u]:
+            edges.append([u, v])
+            G.add_edge(u, v)
+    return edges
+
+def get_test_edges(adj):
+    adj = adj - sp.dia_matrix((adj.diagonal()[np.newaxis, :], [0]), shape=adj.shape)
+    adj.eliminate_zeros()
+    edges_all = sparse_to_tuple(adj)[0]
+
+    edge_count = adj.shape[0]
+    num_test = int(np.floor(edge_count / 10.))
+    num_val = int(np.floor(edge_count / 20.))
+
+    G = nx.to_networkx_graph(adj)
+    test_edges = pick_edges(G, num_test)
+    test_edges_false = pick_false_edges(G, num_test)
+
+    G.remove_edges_from(test_edges)
+    val_edges = pick_edges(G, num_val)
+    val_edges_false = pick_false_edges(G, num_val)
+
+    G.remove_edges_from(val_edges)
+    adj_train = nx.to_scipy_sparse_matrix(G)
+    train_edges = sparse_to_tuple(adj_train)[0]
+
+    def ismember(a, b):
+        inter = [x for x in a if x in b]
+        return len(inter) > 0
+
+    assert ~ismember(test_edges_false, edges_all)
+    assert ~ismember(val_edges_false, edges_all)
+    assert ~ismember(val_edges, train_edges)
+    assert ~ismember(test_edges, train_edges)
+    assert ~ismember(val_edges, test_edges)
+    assert ismember(val_edges, val_edges)
+
+    return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
 
 def edge_dropout(adj, dropout):
 

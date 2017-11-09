@@ -1,5 +1,5 @@
 from gae.layers import GraphConvolution, GraphConvolutionSparse, InnerProductDecoder
-from layers import Dense, GraphConvolution, GraphConvolutionSparse, InnerProductDecoder, GraphConvolutionDense
+from layers import *
 import tensorflow as tf
 
 flags = tf.app.flags
@@ -135,12 +135,16 @@ class GCNModelFeedback(GCNModelVAE):
                                               act=lambda x: x,
                                               dropout=self.dropout,
                                               logging=self.logging)
-        self.weight_norm = tf.nn.l2_loss(l1.vars['weights']) + tf.nn.l2_loss(l2.vars['weights'])
+
+        l3 = ScaledInnerProductDecoder(input_dim=FLAGS.hidden2,
+                                      act=lambda x: x,
+                                      logging=self.logging)
         
         znorm = z
         if FLAGS.normalize:
           znorm = tf.nn.l2_normalize(z, dim = 1)
-        recon = tf.nn.sigmoid(tf.matmul(znorm, tf.transpose(znorm)))
+        recon = l3(znorm)
+        recon = tf.nn.sigmoid(recon)
         d = tf.reduce_sum(recon, 1)
         d = tf.pow(d, -0.5)
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
@@ -151,11 +155,8 @@ class GCNModelFeedback(GCNModelVAE):
         update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
         if FLAGS.normalize:
           update = tf.nn.l2_normalize(update, 1)
-        z = update
 
-        reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)(update)
+        reconstructions = l3(update)
 
         reconstructions = tf.reshape(reconstructions, [-1])
         return reconstructions

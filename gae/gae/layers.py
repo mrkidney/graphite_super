@@ -161,6 +161,23 @@ class GraphConvolutionSparse(Layer):
         outputs = self.act(x)
         return outputs
 
+class ScaledInnerProductDecoder(Layer):
+    def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
+        super(ScaledInnerProductDecoder, self).__init__(**kwargs)
+        with tf.variable_scope(self.name + '_vars'):
+            diag = tf.diag_part(weight_variable_glorot(input_dim, input_dim, name="weights"))
+            self.vars['weights'] = tf.diag(tf.square(diag))
+        self.dropout = dropout
+        self.act = act
+
+    def _call(self, inputs):
+        inputs = tf.nn.dropout(inputs, 1-self.dropout)
+        x = tf.transpose(inputs)
+        x = tf.matmul(self.vars['weights'], x)
+        x = tf.matmul(inputs, x)
+        outputs = self.act(x)
+        return outputs
+
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
     def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
@@ -172,6 +189,5 @@ class InnerProductDecoder(Layer):
         inputs = tf.nn.dropout(inputs, 1-self.dropout)
         x = tf.transpose(inputs)
         x = tf.matmul(inputs, x)
-        x = tf.reshape(x, [-1])
         outputs = self.act(x)
         return outputs

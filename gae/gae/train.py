@@ -38,7 +38,6 @@ flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_integer('anneal', 0, '1 for SA')
 flags.DEFINE_float('auto_dropout', 0.1, 'Dropout for specifically autoregressive neurons')
 flags.DEFINE_integer('normalize', 0, 'normalize embeddings?')
-flags.DEFINE_float('weight_decay', 0.0, 'decay on weight l2 norm')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('test_count', 10, 'batch of tests')
@@ -49,6 +48,7 @@ flags.DEFINE_string('model', 'vgae', 'Model string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
+flags.DEFINE_integer('mask', 1, 'use mask_test_edges')
 
 
 if FLAGS.seeded:
@@ -79,7 +79,10 @@ rocs = np.zeros(FLAGS.test_count)
 aps = np.zeros(FLAGS.test_count)
 
 for test in range(FLAGS.test_count):
-    adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+    if FLAGS.mask:
+        adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj_def)
+    else:
+        adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
     val_edges = tuple(zip(*val_edges))
     val_edges_false = tuple(zip(*val_edges_false))
     test_edges = tuple(zip(*test_edges))
