@@ -57,7 +57,7 @@ def pick_edges(graph, count):
         G.remove_edge(u, v)
 
         if True or nx.has_path(G, u, v):
-            edges.append([u, v])
+            edges.append([min(u,v), max(u,v)])
         else:
             G.add_edge(u, v)
     return edges
@@ -73,7 +73,7 @@ def pick_false_edges(graph, count):
         v = G_nodes[j]
 
         if v not in G.neighbors(u) + [u]:
-            edges.append([u, v])
+            edges.append([min(u,v), max(u,v)])
             G.add_edge(u, v)
     return edges
 
@@ -82,19 +82,22 @@ def get_test_edges(adj):
     adj.eliminate_zeros()
     edges_all = sparse_to_tuple(adj)[0]
 
-    edge_count = adj.shape[0]
+    edge_count = len(edges_all) / 2.0
     num_test = int(np.floor(edge_count / 10.))
     num_val = int(np.floor(edge_count / 20.))
 
     G = nx.to_networkx_graph(adj)
+    print(len(G.edges()))
     test_edges = pick_edges(G, num_test)
     test_edges_false = pick_false_edges(G, num_test)
 
     G.remove_edges_from(test_edges)
+    print(len(G.edges()))
     val_edges = pick_edges(G, num_val)
     val_edges_false = pick_false_edges(G, num_val)
 
     G.remove_edges_from(val_edges)
+    print(len(G.edges()))
     adj_train = nx.to_scipy_sparse_matrix(G)
     train_edges = sparse_to_tuple(adj_train)[0]
 
