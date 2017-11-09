@@ -171,12 +171,10 @@ class ScaledInnerProductDecoder(Layer):
         self.act = act
 
     def _call(self, inputs):
-        inputs = tf.nn.dropout(inputs, 1-self.dropout)
         x = tf.transpose(inputs)
         x = tf.matmul(self.vars['weights'], x)
         x = tf.matmul(inputs, x)
-        outputs = self.act(x)
-        return outputs
+        return x
 
 class InnerProductDecoder(Layer):
     """Decoder model layer for link prediction."""
@@ -186,8 +184,6 @@ class InnerProductDecoder(Layer):
         self.act = act
 
     def _call(self, inputs):
-        inputs = tf.nn.dropout(inputs, 1-self.dropout)
         x = tf.transpose(inputs)
         x = tf.matmul(inputs, x)
-        outputs = self.act(x)
-        return outputs
+        return x
