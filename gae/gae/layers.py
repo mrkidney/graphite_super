@@ -166,7 +166,7 @@ class ScaledInnerProductDecoder(Layer):
         super(ScaledInnerProductDecoder, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             diag = tf.zeros(input_dim, name = 'id') + 1
-            self.vars['weights'] = tf.diag(diag)
+            self.vars['weights'] = tf.diag(tf.square(diag))
         self.dropout = dropout
         self.act = act
 
