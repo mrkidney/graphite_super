@@ -49,6 +49,7 @@ flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 flags.DEFINE_integer('mask', 1, 'use mask_test_edges')
+flags.DEFINE_integer('scale', 0, 'use scaled inner prod')
 
 
 if FLAGS.seeded:

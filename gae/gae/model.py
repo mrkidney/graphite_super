@@ -136,9 +136,14 @@ class GCNModelFeedback(GCNModelVAE):
                                               dropout=self.dropout,
                                               logging=self.logging)
 
-        l3 = ScaledInnerProductDecoder(input_dim=FLAGS.hidden2,
-                                      act=lambda x: x,
-                                      logging=self.logging)
+        if FLAGS.scale:
+          l3 = ScaledInnerProductDecoder(input_dim=FLAGS.hidden2,
+                                        act=lambda x: x,
+                                        logging=self.logging)
+        else:
+          l3 = InnerProductDecoder(input_dim=FLAGS.hidden2,
+                                        act=lambda x: x,
+                                        logging=self.logging)
         
         znorm = z
         if FLAGS.normalize:
