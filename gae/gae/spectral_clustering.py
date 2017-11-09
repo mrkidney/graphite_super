@@ -36,7 +36,6 @@ if FLAGS.seeded:
     np.random.seed(1)
 
 dataset_str = FLAGS.dataset
-model_str = FLAGS.model
 
 # Load data
 adj, features = load_data(dataset_str)
