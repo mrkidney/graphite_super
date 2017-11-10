@@ -80,7 +80,7 @@ def pick_false_edges(graph, count):
 def get_test_edges(adj):
     adj = adj - sp.dia_matrix((adj.diagonal()[np.newaxis, :], [0]), shape=adj.shape)
     adj.eliminate_zeros()
-    edges_all = sparse_to_tuple(adj)[0]
+    edges_all = sparse_to_tuple(adj)[0].tolist()
 
     edge_count = len(edges_all) / 2.0
     num_test = int(np.floor(edge_count / 10.))
@@ -96,17 +96,18 @@ def get_test_edges(adj):
 
     G.remove_edges_from(val_edges)
     adj_train = nx.to_scipy_sparse_matrix(G)
-    train_edges = sparse_to_tuple(adj_train)[0]
+    train_edges = sparse_to_tuple(adj_train)[0].tolist()
 
     def ismember(a, b):
-        inter = [x for x in a if x in b]
-        return len(inter) > 0
+        seta = set([tuple(x) for x in a])
+        setb = set([tuple(x) for x in b])
+        return len(seta & setb) > 0
 
-    assert ~ismember(test_edges_false, edges_all)
-    assert ~ismember(val_edges_false, edges_all)
-    assert ~ismember(val_edges, train_edges)
-    assert ~ismember(test_edges, train_edges)
-    assert ~ismember(val_edges, test_edges)
+    assert not ismember(test_edges_false, edges_all)
+    assert not ismember(val_edges_false, val_edges + train_edges)
+    assert not ismember(val_edges, train_edges)
+    assert not ismember(test_edges, train_edges)
+    assert not ismember(val_edges, test_edges)
     assert ismember(val_edges, val_edges)
 
     return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
@@ -202,11 +203,11 @@ def mask_test_edges(adj):
                 continue
         val_edges_false.append([idx_i, idx_j])
 
-    assert ~ismember(test_edges_false, edges_all)
-    assert ~ismember(val_edges_false, edges_all)
-    assert ~ismember(val_edges, train_edges)
-    assert ~ismember(test_edges, train_edges)
-    assert ~ismember(val_edges, test_edges)
+    assert not ismember(test_edges_false, edges_all)
+    assert not ismember(val_edges_false, edges_all)
+    assert not ismember(val_edges, train_edges)
+    assert not ismember(test_edges, train_edges)
+    assert not ismember(val_edges, test_edges)
 
     data = np.ones(train_edges.shape[0])
 
