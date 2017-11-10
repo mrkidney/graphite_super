@@ -28,6 +28,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
+flags.DEFINE_integer('test_count', 10, 'Set num tests')
+flags.DEFINE_integer('emb_size', 128, 'Number of eigenvectors for embedding')
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -54,10 +56,10 @@ features = sparse_to_tuple(features.tocoo())
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
-rocs = np.zeros(10)
-aps = np.zeros(10)
+rocs = np.zeros(FLAGS.test_count)
+aps = np.zeros(FLAGS.test_count)
 
-for k in range(10):
+for k in range(FLAGS.test_count):
 
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
     val_edges = tuple(zip(*val_edges))
@@ -66,7 +68,7 @@ for k in range(10):
     test_edges_false = tuple(zip(*test_edges_false))
     adj = adj_train
 
-    z = manifold.spectral_embedding(adj, n_components=128, random_state=k)
+    z = manifold.spectral_embedding(adj, n_components=FLAGS.emb_size, random_state=k)
     adj_rec = np.dot(z, z.T)
 
     preds = sigmoid(adj_rec[test_edges])
