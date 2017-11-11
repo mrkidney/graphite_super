@@ -3,8 +3,7 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 import scipy.io as io
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
+
 
 
 def parse_index_file(filename):
