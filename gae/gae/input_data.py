@@ -3,7 +3,7 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 import scipy.io as io
-
+import sys
 
 
 def parse_index_file(filename):
@@ -16,83 +16,56 @@ def load_protein():
     n = io.loadmat("data/Homo_sapiens.mat")
     return n['network'], n['group']
 
-def load_enzyme():
-    adj = sp.lil_matrix((125, 125))
-    features = sp.lil_matrix((125, 1))
-    for line in open("data/ENZYMES_g296.edges"):
-        vals = line.split()
-        x = int(vals[0]) - 2
-        y = int(vals[1]) - 2
-        adj[y, x] = adj[x, y] = 1
-    return adj, features
+def sample_mask(idx, l):
+    """Create mask."""
+    mask = np.zeros(l)
+    mask[idx] = 1
+    return np.array(mask, dtype=np.bool)
 
-def load_florida():
-    adj = sp.lil_matrix((128, 128))
-    features = sp.lil_matrix((128, 1))
-    for line in open("data/eco-florida.edges"):
-        vals = line.split()
-        x = int(vals[0]) - 1
-        y = int(vals[1]) - 1
-        val = float(vals[2])
-        adj[y, x] = adj[x, y] = val
-    return adj, features
-
-def load_brain():
-    adj = sp.lil_matrix((1780, 1780))
-    features = sp.lil_matrix((1780, 1))
-    nums = []
-    for line in open("data/bn-fly-drosophila_medulla_1.edges"):
-        vals = line.split()
-        x = int(vals[0]) - 1
-        y = int(vals[1]) - 1
-        adj[y, x] = adj[x, y] = adj[x, y] + 1
-    return adj, features
-
-
-def load_data(dataset):
-    if dataset == 'florida':
-        return load_florida()
-    elif dataset == 'brain':
-        return load_brain()
-    elif dataset == 'enzyme':
-        return load_enzyme()
-    elif dataset == 'protein':
+def load_data(dataset_str):
+    if dataset_str == 'protein':
         return load_protein()
 
-    # load the data: x, tx, allx, graph
-    names = ['x', 'tx', 'allx', 'graph']
+    names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
     objects = []
     for i in range(len(names)):
-        objects.append(pkl.load(open("data/ind.{}.{}".format(dataset, names[i]))))
-    x, tx, allx, graph = tuple(objects)
-    test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset))
+        objects.append(pkl.load(open("data/ind.{}.{}".format(dataset_str, names[i]))))
+    x, y, tx, ty, allx, ally, graph = tuple(objects)
+    test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
     test_idx_range = np.sort(test_idx_reorder)
 
-    if dataset == 'citeseer':
+    if dataset_str == 'citeseer':
         # Fix citeseer dataset (there are some isolated nodes in the graph)
         # Find isolated nodes, add them as zero-vecs into the right position
         test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
         tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
         tx_extended[test_idx_range-min(test_idx_range), :] = tx
         tx = tx_extended
-
-    # if dataset == 'cora':
-    #     names = ['y', 'ty', 'ally']
-    #     objects = []
-    #     for i in range(len(names)):
-    #         objects.append(pkl.load(open("data/ind.{}.{}".format(dataset, names[i]))))
-    #     y, ty, ally = tuple(objects)
-
-    #     labels = np.vstack((ally, ty))
-    #     labels[test_idx_reorder, :] = labels[test_idx_range, :]
-    #     np.save('labels', labels)
-
+        ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+        ty_extended[test_idx_range-min(test_idx_range), :] = ty
+        ty = ty_extended
 
     features = sp.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
     adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
 
-    return adj, features
+    labels = np.vstack((ally, ty))
+    labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
+    idx_test = test_idx_range.tolist()
+    idx_train = range(len(y))
+    idx_val = range(len(y), len(y)+500)
 
+    train_mask = sample_mask(idx_train, labels.shape[0])
+    val_mask = sample_mask(idx_val, labels.shape[0])
+    test_mask = sample_mask(idx_test, labels.shape[0])
+
+    y_train = np.zeros(labels.shape)
+    y_val = np.zeros(labels.shape)
+    y_test = np.zeros(labels.shape)
+    y_train[train_mask, :] = labels[train_mask, :]
+    y_val[val_mask, :] = labels[val_mask, :]
+    y_test[test_mask, :] = labels[test_mask, :]
+
+    return adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
 
