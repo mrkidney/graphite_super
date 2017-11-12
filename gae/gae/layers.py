@@ -165,8 +165,8 @@ class ScaledInnerProductDecoder(Layer):
     def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):
         super(ScaledInnerProductDecoder, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
-            diag = zeros(input_dim, name = 'id') + 1
-            self.vars['weights'] = tf.diag(tf.square(diag))
+            scale = zeros(1, name = 'id') + 1
+            self.vars['weights'] = scale * scale * tf.eye(input_dim)
         self.dropout = dropout
         self.act = act
 
