@@ -119,7 +119,7 @@ for test in range(FLAGS.test_count):
 
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy, opt.log_lik], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]

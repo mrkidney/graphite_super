@@ -27,7 +27,6 @@ class OptimizerVAE(object):
         labels_sub = labels
 
         self.cost = 0
-        self.log_lik = tf.zeros(1)
         if FLAGS.model == 'graphite':
             self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
 
