@@ -123,7 +123,6 @@ for test in range(FLAGS.test_count):
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
-        avg_lik = outs[3]
 
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
@@ -131,7 +130,7 @@ for test in range(FLAGS.test_count):
         val_accuracy = outs[1]
 
         if FLAGS.verbose:
-            print("Epoch:", '%04d' % (epoch + 1), "train_recon_loss=", "{:.5f}".format(avg_lik), "train_loss=", "{:.5f}".format(avg_cost),
+            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
 
     feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
