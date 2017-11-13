@@ -106,7 +106,7 @@ class GCNModelFeedback(Model):
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
-                                              dropout=0.,
+                                              dropout=self.dropout,
                                               logging=self.logging)(inputs)
 
         self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
