@@ -187,7 +187,6 @@ class GCNModelFeedback(Model):
                                               features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
                                               sparse_inputs = True,
-                                              features_nonzero = self.features_nonzero,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
@@ -203,7 +202,7 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden2(z_noiseless)
+        self.outputs = hidden1(self.inputs) + hidden2(z_noiseless)
         self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden2.vars['weights'])
