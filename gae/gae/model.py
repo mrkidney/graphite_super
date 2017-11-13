@@ -64,7 +64,7 @@ class GCNModel(Model):
 
         hidden = GraphConvolutionSparse(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden4,
-                                              adj=self.recon,
+                                              adj=self.adj,
                                               features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
@@ -72,7 +72,7 @@ class GCNModel(Model):
 
         output = GraphConvolution(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
-                                       adj=self.recon,
+                                       adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
@@ -208,6 +208,6 @@ class GCNModelFeedback(Model):
         self.outputs = hidden2(z_noiseless)
         self.outputs = output(self.outputs)
 
-        self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])
+        #self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])
 
 

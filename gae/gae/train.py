@@ -43,7 +43,7 @@ flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('test_count', 1, 'batch of tests')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
-flags.DEFINE_string('model', 'vgae', 'Model string.')
+flags.DEFINE_string('model', 'graphite', 'Model string.')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
@@ -81,7 +81,11 @@ for test in range(FLAGS.test_count):
     num_nodes = adj.shape[0]
 
     # Create model
-    model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
+    model = None
+    if model_str == 'graphite':
+        model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
+    else:
+        model = GCNModel(placeholders, num_features, num_nodes, features_nonzero)
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
     norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
