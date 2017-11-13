@@ -182,11 +182,12 @@ class GCNModelFeedback(Model):
 
         self.reconstructions = self.decoder(z)
 
-        hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        hidden1 = Dense(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden4,
                                               features_nonzero=self.features_nonzero,
-                                              adj = self.adj,
                                               act=tf.nn.relu,
+                                              sparse_inputs = True,
+                                              features_nonzero = self.features_nonzero,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
