@@ -159,21 +159,6 @@ for epoch in range(FLAGS.epochs):
     avg_cost = outs[1]
     avg_accuracy = 0
     val_accuracy = 0
-    #avg_accuracy = outs[2]
-
-    # feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
-    # feed_dict.update({placeholders['dropout']: 0.})
-    # outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-    # val_accuracy = outs[1]
-
-    # feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
-    # feed_dict.update({placeholders['dropout']: 0.})
-    # outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-    # test_accuracy = outs[1]
-
-    # vals[epoch] = val_accuracy
-    # tests[epoch] = test_accuracy
-
 
     print(get_roc_score(val_edges, val_edges_false))
 

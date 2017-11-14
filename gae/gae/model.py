@@ -62,10 +62,9 @@ class GCNModel(Model):
         self.reconstructions = 0
         inputs = self.inputs
 
-        hidden = GraphConvolutionSparse(input_dim=self.input_dim,
+        hidden = GraphConvolution(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden4,
                                               adj=self.adj,
-                                              features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
                                               logging=self.logging)
