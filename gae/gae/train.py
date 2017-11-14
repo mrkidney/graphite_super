@@ -76,6 +76,28 @@ features = sparse_to_tuple(features.tocoo())
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def reconstruct():
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_train, train_mask, placeholders)
+    feed_dict.update({placeholders['dropout']: 0.})
+
+    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+    return (emb, np.reshape(recon, (num_nodes, num_nodes)))
+
+def get_roc_score(edges_pos, edges_neg):
+
+    emb, adj_rec = reconstruct()
+
+    preds = sigmoid(adj_rec[edges_pos])
+    preds_neg = sigmoid(adj_rec[edges_neg])
+
+    preds_all = np.hstack([preds, preds_neg])
+    labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+    roc_score = roc_auc_score(labels_all, preds_all)
+    ap_score = average_precision_score(labels_all, preds_all)
+
 for test in range(FLAGS.test_count):
 
     # Define placeholders
@@ -158,27 +180,6 @@ for test in range(FLAGS.test_count):
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-def reconstruct():
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_train, train_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-
-    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-    return (emb, np.reshape(recon, (num_nodes, num_nodes)))
-
-def get_roc_score(edges_pos, edges_neg):
-
-    emb, adj_rec = reconstruct()
-
-    preds = sigmoid(adj_rec[edges_pos])
-    preds_neg = sigmoid(adj_rec[edges_neg])
-
-    preds_all = np.hstack([preds, preds_neg])
-    labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
-    roc_score = roc_auc_score(labels_all, preds_all)
-    ap_score = average_precision_score(labels_all, preds_all)
 
     return roc_score, ap_score
 
