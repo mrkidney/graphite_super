@@ -109,6 +109,8 @@ class GCNModelFeedback(Model):
                                               dropout=self.dropout,
                                               logging=self.logging)(inputs)
 
+        self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])
+
         self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
                                        output_dim=FLAGS.hidden2,
                                        adj=self.adj,
@@ -182,13 +184,13 @@ class GCNModelFeedback(Model):
 
         self.reconstructions = self.decoder(z)
 
-        hidden1 = Dense(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden4,
-                                              features_nonzero=self.features_nonzero,
-                                              act=tf.nn.relu,
-                                              sparse_inputs = True,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
+        # hidden1 = Dense(input_dim=self.input_dim,
+        #                                       output_dim=FLAGS.hidden4,
+        #                                       features_nonzero=self.features_nonzero,
+        #                                       act=tf.nn.relu,
+        #                                       sparse_inputs = True,
+        #                                       dropout=self.dropout,
+        #                                       logging=self.logging)
 
         hidden2 = Dense(input_dim=FLAGS.hidden2,
                                       output_dim=self.output_dim,
@@ -196,16 +198,14 @@ class GCNModelFeedback(Model):
                                       dropout=0.,
                                       logging=self.logging)
 
-        output = Dense(input_dim=FLAGS.hidden4,
-                                       output_dim=self.output_dim,
-                                       act=lambda x: x,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
+        # output = Dense(input_dim=FLAGS.hidden4,
+        #                                output_dim=self.output_dim,
+        #                                act=lambda x: x,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
 
         # self.outputs = hidden2(z_noiseless)
         # self.outputs = output(self.outputs)
         self.outputs = hidden2(z_noiseless)
-
-        self.weight_norm = tf.nn.l2_loss(hidden2.vars['weights'])
 
 
