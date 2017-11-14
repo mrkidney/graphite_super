@@ -108,8 +108,8 @@ for test in range(FLAGS.test_count):
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
-    vals = np.zeros(FLAGS.epoch)
-    tests = np.zeros(FLAGS.epoch)
+    vals = np.zeros(FLAGS.epochs)
+    tests = np.zeros(FLAGS.epochs)
 
     # Train model
     for epoch in range(FLAGS.epochs):
