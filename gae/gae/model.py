@@ -76,7 +76,7 @@ class GCNModel(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = output(hidden(inputs))
+        self.outputs = output(hidden(tf.sparse_tensor_to_dense(inputs))
 
         self.weight_norm = tf.nn.l2_loss(hidden.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
 
