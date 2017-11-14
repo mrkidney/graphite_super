@@ -108,6 +108,9 @@ for test in range(FLAGS.test_count):
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
+    vals = np.zeros(FLAGS.epoch)
+    tests = np.zeros(FLAGS.epoch)
+
     # Train model
     for epoch in range(FLAGS.epochs):
 
@@ -129,12 +132,17 @@ for test in range(FLAGS.test_count):
         outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
         val_accuracy = outs[1]
 
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: 0.})
+        outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
+        test_accuracy = outs[1]
+
+        vals[epoch] = val_accuracy
+        tests[epoch] = test_accuracy
+
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
 
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    outs = sess.run([opt.accuracy], feed_dict=feed_dict)
-    print(outs[0])
-
+arg = np.argmax(vals)
+print(tests[arg])
