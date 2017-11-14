@@ -98,6 +98,8 @@ def get_roc_score(edges_pos, edges_neg):
     roc_score = roc_auc_score(labels_all, preds_all)
     ap_score = average_precision_score(labels_all, preds_all)
 
+    return roc_score, ap_score
+
 for test in range(FLAGS.test_count):
 
     # Define placeholders
@@ -180,7 +182,5 @@ for test in range(FLAGS.test_count):
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
-
-    return roc_score, ap_score
 
 print(get_roc_score(val_edges, val_edges_false))
