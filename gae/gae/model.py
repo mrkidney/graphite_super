@@ -182,5 +182,6 @@ class GCNModelFeedback(Model):
           z = z_noiseless
 
         self.reconstructions = self.decoder(z)
+        self.reconstructions_noiseless = self.decoder(z_noiseless)
 
 
