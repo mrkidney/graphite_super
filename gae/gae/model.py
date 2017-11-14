@@ -184,27 +184,29 @@ class GCNModelFeedback(Model):
 
         self.reconstructions = self.decoder(z)
 
-        # hidden1 = Dense(input_dim=self.input_dim,
-        #                                       output_dim=FLAGS.hidden4,
-        #                                       features_nonzero=self.features_nonzero,
-        #                                       act=tf.nn.relu,
-        #                                       sparse_inputs = True,
-        #                                       dropout=self.dropout,
-        #                                       logging=self.logging)
+        recon = tf.matmul(z_noiseless, tf.transpose(z_noiseless))
+        recon = tf.nn.sigmoid(recon)
+        d = tf.reduce_sum(recon, 1)
+        d = tf.pow(d, -0.5)
+        recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-        hidden2 = Dense(input_dim=FLAGS.hidden2,
+        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
-                                      dropout=0.,
+                                      sparse_inputs = True,
+                                      features_nonzero = self.features_nonzero,
+                                      dropout=self.dropout,
                                       logging=self.logging)
 
-        output = Dense(input_dim=FLAGS.hidden4,
+        output = GraphConvolutionDense(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden2(z_noiseless)
-        self.outputs = output(self.outputs)
+        self.weight_norm += tf.nn.l2_loss(hidden2.vars['weights'])
+
+        self.outputs = hidden2((z_noiseless, recon))
+        self.outputs = output((self.outputs, recon))
 
 
