@@ -17,7 +17,7 @@ from sklearn.preprocessing import normalize
 from sklearn import manifold
 from scipy.special import expit
 
-from optimizer import OptimizerVAE
+from optimizer import *
 from input_data import *
 from model import *
 from preprocessing import *
