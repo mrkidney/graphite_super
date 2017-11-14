@@ -171,7 +171,7 @@ feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_train, train_ma
 feed_dict.update({placeholders['dropout']: 0.})
 
 features = sess.run(model.z_mean, feed_dict=feed_dict)
-features = sparse_to_tuple(features.tocoo())
+features = sparse_to_tuple(sp.coo_matrix(features))
 #features = preprocess_features(features)
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
