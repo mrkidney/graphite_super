@@ -165,7 +165,7 @@ class GCNModelFeedback(Model):
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
         update = l1((z, recon)) + l0((self.inputs, recon))
-        update = l2((update, recon, z))
+        update = l2((update, recon))
 
         update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
         reconstructions = l3(update)
