@@ -168,7 +168,6 @@ class GCNModelFeedback(Model):
         update = l2((update, recon, z))
 
         update = (1 - FLAGS.autoregressive_scalar) * z + FLAGS.autoregressive_scalar * update
-        self.z_final = update
         reconstructions = l3(update)
 
         reconstructions = tf.reshape(reconstructions, [-1])
@@ -183,24 +182,5 @@ class GCNModelFeedback(Model):
           z = z_noiseless
 
         self.reconstructions = self.decoder(z)
-
-        hidden2 = GraphConvolutionDense(input_dim=self.input_dim,
-                                      output_dim=FLAGS.hidden4,
-                                      act=tf.nn.relu,
-                                      sparse_inputs = True,
-                                      features_nonzero = self.features_nonzero,
-                                      dropout=self.dropout,
-                                      logging=self.logging)
-
-        output = GraphConvolutionDense(input_dim=FLAGS.hidden4,
-                                       output_dim=self.output_dim,
-                                       act=lambda x: x,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
-
-        self.weight_norm += tf.nn.l2_loss(hidden2.vars['weights'])
-
-        self.outputs = hidden2((self.inputs, recon))
-        self.outputs = output((self.outputs, recon))
 
 

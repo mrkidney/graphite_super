@@ -57,12 +57,22 @@ model_str = FLAGS.model
 
 # Load data
 adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset_str)
+adj_def = adj
+
+
+adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
+val_edges = tuple(zip(*val_edges))
+val_edges_false = tuple(zip(*val_edges_false))
+test_edges = tuple(zip(*test_edges))
+test_edges_false = tuple(zip(*test_edges_false))
+adj = adj_train
+
 adj_norm = preprocess_graph(adj)
 adj_label = adj + sp.eye(adj.shape[0])
 adj_label = sparse_to_tuple(adj_label)
 
-#features = sparse_to_tuple(features.tocoo())
-features = preprocess_features(features)
+features = sparse_to_tuple(features.tocoo())
+#features = preprocess_features(features)
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
@@ -92,7 +102,7 @@ for test in range(FLAGS.test_count):
 
     # Optimizer
     with tf.name_scope('optimizer'):
-        opt = OptimizerVAE(preds=model.reconstructions,
+        opt = OptimizerSemi(preds=model.reconstructions,
                            labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
                            model=model, num_nodes=num_nodes,
                            pos_weight=pos_weight,
@@ -122,28 +132,51 @@ for test in range(FLAGS.test_count):
 
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+        outs = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
 
         avg_cost = outs[1]
-        avg_accuracy = outs[2]
+        avg_accuracy = 0
+        val_accuracy = 0
+        #avg_accuracy = outs[2]
 
-        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
-        feed_dict.update({placeholders['dropout']: 0.})
-        outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-        val_accuracy = outs[1]
+        # feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
+        # feed_dict.update({placeholders['dropout']: 0.})
+        # outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
+        # val_accuracy = outs[1]
 
-        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
-        feed_dict.update({placeholders['dropout']: 0.})
-        outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-        test_accuracy = outs[1]
+        # feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
+        # feed_dict.update({placeholders['dropout']: 0.})
+        # outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
+        # test_accuracy = outs[1]
 
-        vals[epoch] = val_accuracy
-        tests[epoch] = test_accuracy
+        # vals[epoch] = val_accuracy
+        # tests[epoch] = test_accuracy
 
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
-arg = np.argmax(vals)
-print(arg)
-print(tests[arg])
+def reconstruct():
+    feed_dict = construct_feed_dict(adj_norm, adj_label, features, placeholders)
+    feed_dict.update({placeholders['dropout']: 0.})
+
+    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
+    return (emb, np.reshape(recon, (num_nodes, num_nodes)))
+
+def get_roc_score(edges_pos, edges_neg):
+
+    emb, adj_rec = reconstruct()
+
+    preds = sigmoid(adj_rec[edges_pos])
+    preds_neg = sigmoid(adj_rec[edges_neg])
+
+    preds_all = np.hstack([preds, preds_neg])
+    labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+    roc_score = roc_auc_score(labels_all, preds_all)
+    ap_score = average_precision_score(labels_all, preds_all)
+
+    return roc_score, ap_score, emb
+
+print(get_roc_score(val_edges, val_edges_false))
