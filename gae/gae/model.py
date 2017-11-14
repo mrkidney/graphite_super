@@ -206,7 +206,7 @@ class GCNModelFeedback(Model):
 
         self.weight_norm += tf.nn.l2_loss(hidden2.vars['weights'])
 
-        self.outputs = hidden2((z_noiseless, recon))
+        self.outputs = hidden2((self.inputs, recon))
         self.outputs = output((self.outputs, recon))
 
 
