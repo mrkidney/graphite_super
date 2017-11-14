@@ -193,19 +193,18 @@ class GCNModelFeedback(Model):
         #                                       logging=self.logging)
 
         hidden2 = Dense(input_dim=FLAGS.hidden2,
-                                      output_dim=self.output_dim,
-                                      act=lambda x: x,
+                                      output_dim=FLAGS.hidden4,
+                                      act=tf.nn.relu,
                                       dropout=0.,
                                       logging=self.logging)
 
-        # output = Dense(input_dim=FLAGS.hidden4,
-        #                                output_dim=self.output_dim,
-        #                                act=lambda x: x,
-        #                                dropout=self.dropout,
-        #                                logging=self.logging)
+        output = Dense(input_dim=FLAGS.hidden4,
+                                       output_dim=self.output_dim,
+                                       act=lambda x: x,
+                                       dropout=self.dropout,
+                                       logging=self.logging)
 
-        # self.outputs = hidden2(z_noiseless)
-        # self.outputs = output(self.outputs)
         self.outputs = hidden2(z_noiseless)
+        self.outputs = output(self.outputs)
 
 

@@ -145,4 +145,5 @@ for test in range(FLAGS.test_count):
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
 
 arg = np.argmax(vals)
+print(arg)
 print(tests[arg])
