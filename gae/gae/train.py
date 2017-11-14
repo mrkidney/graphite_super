@@ -154,60 +154,6 @@ for epoch in range(FLAGS.epochs):
 
     feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    outs = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
-
-    avg_cost = outs[1]
-    avg_accuracy = 0
-    val_accuracy = 0
-
-    print(get_roc_score(val_edges, val_edges_false))
-
-    if FLAGS.verbose:
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-              "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
-
-
-feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_train, train_mask, placeholders)
-feed_dict.update({placeholders['dropout']: 0.})
-
-features = sess.run(model.z_mean, feed_dict=feed_dict)
-features = sparse_to_tuple(sp.coo_matrix(features))
-#features = preprocess_features(features)
-num_features = features[2][1]
-features_nonzero = features[1].shape[0]
-
-model = GCNModel(placeholders, num_features, num_nodes, features_nonzero)
-with tf.name_scope('optimizer'):
-    opt = OptimizerSuper(preds=model.reconstructions,
-                       labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
-                       model=model, num_nodes=num_nodes,
-                       pos_weight=pos_weight,
-                       norm=norm)
-
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-if FLAGS.gpu == -1:
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    sess = tf.Session()
-else:
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
-    gpu_options = tf.GPUOptions(allow_growth=True)
-    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
-sess.run(tf.global_variables_initializer())
-
-vals = np.zeros(FLAGS.epochs)
-tests = np.zeros(FLAGS.epochs)
-
-# Train model
-for epoch in range(FLAGS.epochs):
-
-    if FLAGS.edge_dropout > 0:
-        adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
-        adj_norm_mini = preprocess_graph(adj_train_mini)
-    else:
-        adj_norm_mini = adj_norm
-
-    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: FLAGS.dropout})
     outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
     avg_cost = outs[1]
@@ -225,6 +171,8 @@ for epoch in range(FLAGS.epochs):
 
     vals[epoch] = val_accuracy
     tests[epoch] = test_accuracy
+
+    print(get_roc_score(val_edges, val_edges_false))
 
     if FLAGS.verbose:
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),

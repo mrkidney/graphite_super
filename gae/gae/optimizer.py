@@ -21,19 +21,6 @@ def masked_accuracy(preds, labels, mask):
     accuracy_all *= mask
     return tf.reduce_mean(accuracy_all)
 
-class OptimizerSuper(object):
-    def __init__(self, preds, labels, model, num_nodes, pos_weight, norm):
-
-        self.cost = FLAGS.weight_decay * model.weight_norm
-
-        self.cost += masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
-
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
-        self.opt_op = self.optimizer.minimize(self.cost)
-        self.grads_vars = self.optimizer.compute_gradients(self.cost)
-
-        self.accuracy = masked_accuracy(model.outputs, model.labels, model.labels_mask)
-
 class OptimizerSemi(object):
     def __init__(self, preds, labels, model, num_nodes, pos_weight, norm):
         preds_sub = preds
@@ -47,8 +34,13 @@ class OptimizerSemi(object):
             self.kl = (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_log_std - tf.square(model.z_mean) - tf.square(tf.exp(model.z_log_std)), 1))
             self.cost -= self.kl
 
+        self.cost += FLAGS.weight_decay * model.weight_norm
+
+        self.cost += masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
+
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
+        self.accuracy = masked_accuracy(model.outputs, model.labels, model.labels_mask)
 
