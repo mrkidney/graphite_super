@@ -101,15 +101,15 @@ class GCNModelFeedback(Model):
 
     def encoder(self, inputs):
 
-        hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        hidden = GraphConvolutionSparse(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden1,
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
                                               act=tf.nn.relu,
                                               dropout=self.dropout,
-                                              logging=self.logging)(inputs)
-
-        self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])
+                                              logging=self.logging)
+        hidden1 = hidden(inputs)
+        self.weight_norm = tf.nn.l2_loss(hidden.vars['weights'])
 
         self.z_mean = GraphConvolution(input_dim=FLAGS.hidden1,
                                        output_dim=FLAGS.hidden2,
