@@ -190,7 +190,7 @@ class GCNModelFeedback(Model):
         d = tf.pow(d, -0.5)
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
 
-        hidden2 = GraphConvolutionDense(input_dim=FLAGS.hidden2,
+        hidden2 = GraphConvolutionDense(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       sparse_inputs = True,
