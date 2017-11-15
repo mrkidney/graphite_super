@@ -40,6 +40,7 @@ flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
 
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
+flags.DEFINE_integer('pick_best', 1, 'choose arg based on val')
 flags.DEFINE_integer('test_count', 100, 'batch of tests')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
@@ -159,7 +160,10 @@ for run in range(FLAGS.test_count)
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy),
                   "val_roc=", "{:.5f}".format(roc))
 
-    arg = np.argmax(vals)
+    if FLAGS.pick_best:
+        arg = np.argmax(vals)
+    else:
+        arg = FLAGS.epochs - 1
     runs[run] = tests[arg]
     if FLAGS.verbose:
         print(arg)
