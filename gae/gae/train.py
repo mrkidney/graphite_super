@@ -60,12 +60,12 @@ adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_da
 adj_def = adj
 
 
-adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
-val_edges = tuple(zip(*val_edges))
-val_edges_false = tuple(zip(*val_edges_false))
-test_edges = tuple(zip(*test_edges))
-test_edges_false = tuple(zip(*test_edges_false))
-adj = adj_train
+# adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
+# val_edges = tuple(zip(*val_edges))
+# val_edges_false = tuple(zip(*val_edges_false))
+# test_edges = tuple(zip(*test_edges))
+# test_edges_false = tuple(zip(*test_edges_false))
+# adj = adj_train
 
 adj_norm = preprocess_graph(adj)
 adj_label = adj + sp.eye(adj.shape[0])
@@ -173,8 +173,8 @@ for epoch in range(FLAGS.epochs):
     tests[epoch] = test_accuracy
 
     roc = 0
-    if model_str == 'graphite':
-        roc = get_roc_score(val_edges, val_edges_false)[0]
+    # if model_str == 'graphite':
+    #     roc = get_roc_score(val_edges, val_edges_false)[0]
 
     if FLAGS.verbose:
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
