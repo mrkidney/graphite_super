@@ -40,7 +40,7 @@ flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
 
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
-flags.DEFINE_integer('test_count', 1, 'batch of tests')
+flags.DEFINE_integer('test_count', 100, 'batch of tests')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'graphite', 'Model string.')
@@ -76,111 +76,95 @@ features = sparse_to_tuple(features.tocoo())
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+runs = np.zeros(FLAGS.test_count)
+for run in range(FLAGS.test_count)
+    # Define placeholders
+    placeholders = {
+        'features': tf.sparse_placeholder(tf.float32),
+        'adj': tf.sparse_placeholder(tf.float32),
+        'adj_orig': tf.sparse_placeholder(tf.float32),
+        'dropout': tf.placeholder_with_default(0., shape=()),
+        'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1])),
+        'labels_mask': tf.placeholder(tf.int32)
+    }
 
-def reconstruct():
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_train, train_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
+    num_nodes = adj.shape[0]
 
-    emb, recon = sess.run([model.z_mean, model.reconstructions_noiseless], feed_dict=feed_dict)
-    return (emb, np.reshape(recon, (num_nodes, num_nodes)))
-
-def get_roc_score(edges_pos, edges_neg):
-
-    emb, adj_rec = reconstruct()
-
-    preds = sigmoid(adj_rec[edges_pos])
-    preds_neg = sigmoid(adj_rec[edges_neg])
-
-    preds_all = np.hstack([preds, preds_neg])
-    labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
-    roc_score = roc_auc_score(labels_all, preds_all)
-    ap_score = average_precision_score(labels_all, preds_all)
-
-    return roc_score, ap_score
-
-# Define placeholders
-placeholders = {
-    'features': tf.sparse_placeholder(tf.float32),
-    'adj': tf.sparse_placeholder(tf.float32),
-    'adj_orig': tf.sparse_placeholder(tf.float32),
-    'dropout': tf.placeholder_with_default(0., shape=()),
-    'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1])),
-    'labels_mask': tf.placeholder(tf.int32)
-}
-
-num_nodes = adj.shape[0]
-
-# Create model
-model = None
-if model_str == 'graphite':
-    model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
-else:
-    model = GCNModel(placeholders, num_features, num_nodes, features_nonzero)
-
-pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
-norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
-
-# Optimizer
-with tf.name_scope('optimizer'):
-    opt = OptimizerSemi(preds=model.reconstructions,
-                       labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
-                       model=model, num_nodes=num_nodes,
-                       pos_weight=pos_weight,
-                       norm=norm)
-
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-if FLAGS.gpu == -1:
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    sess = tf.Session()
-else:
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
-    gpu_options = tf.GPUOptions(allow_growth=True)
-    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
-sess.run(tf.global_variables_initializer())
-
-vals = np.zeros(FLAGS.epochs)
-tests = np.zeros(FLAGS.epochs)
-
-# Train model
-for epoch in range(FLAGS.epochs):
-
-    if FLAGS.edge_dropout > 0:
-        adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
-        adj_norm_mini = preprocess_graph(adj_train_mini)
+    # Create model
+    model = None
+    if model_str == 'graphite':
+        model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
-        adj_norm_mini = adj_norm
+        model = GCNModel(placeholders, num_features, num_nodes, features_nonzero)
 
-    feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+    pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
+    norm = adj.shape[0] * adj.shape[0] / float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
-    avg_cost = outs[1]
-    avg_accuracy = outs[2]
+    # Optimizer
+    with tf.name_scope('optimizer'):
+        opt = OptimizerSemi(preds=model.reconstructions,
+                           labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
+                           model=model, num_nodes=num_nodes,
+                           pos_weight=pos_weight,
+                           norm=norm)
 
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-    val_accuracy = outs[1]
+    os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+    if FLAGS.gpu == -1:
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        sess = tf.Session()
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
+        gpu_options = tf.GPUOptions(allow_growth=True)
+        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
+    sess.run(tf.global_variables_initializer())
 
-    feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.})
-    outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
-    test_accuracy = outs[1]
+    vals = np.zeros(FLAGS.epochs)
+    tests = np.zeros(FLAGS.epochs)
 
-    vals[epoch] = val_accuracy
-    tests[epoch] = test_accuracy
+    # Train model
+    for epoch in range(FLAGS.epochs):
 
-    roc = 0
-    # if model_str == 'graphite':
-    #     roc = get_roc_score(val_edges, val_edges_false)[0]
+        if FLAGS.edge_dropout > 0:
+            adj_train_mini = edge_dropout(adj, FLAGS.edge_dropout)
+            adj_norm_mini = preprocess_graph(adj_train_mini)
+        else:
+            adj_norm_mini = adj_norm
 
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+
+        avg_cost = outs[1]
+        avg_accuracy = outs[2]
+
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: 0.})
+        outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
+        val_accuracy = outs[1]
+
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: 0.})
+        outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
+        test_accuracy = outs[1]
+
+        vals[epoch] = val_accuracy
+        tests[epoch] = test_accuracy
+
+        roc = 0
+        # if model_str == 'graphite':
+        #     roc = get_roc_score(val_edges, val_edges_false)[0]
+
+        if FLAGS.verbose:
+            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
+                  "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy),
+                  "val_roc=", "{:.5f}".format(roc))
+
+    arg = np.argmax(vals)
+    runs[run] = tests[arg]
     if FLAGS.verbose:
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-              "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy),
-              "val_roc=", "{:.5f}".format(roc))
+        print(arg)
+        print(tests[arg])
+        break
 
-arg = np.argmax(vals)
-print(arg)
-print(tests[arg])
+if not FLAGS.verbose:
+    print((np.mean(runs), stats.sem(runs)))
