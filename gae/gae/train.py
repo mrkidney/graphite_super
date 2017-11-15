@@ -72,8 +72,8 @@ adj_norm = preprocess_graph(adj)
 adj_label = adj + sp.eye(adj.shape[0])
 adj_label = sparse_to_tuple(adj_label)
 
-features = sparse_to_tuple(features.tocoo())
-#features = preprocess_features(features)
+#features = sparse_to_tuple(features.tocoo())
+features = preprocess_features(features)
 num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
