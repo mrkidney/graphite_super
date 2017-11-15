@@ -78,7 +78,7 @@ num_features = features[2][1]
 features_nonzero = features[1].shape[0]
 
 runs = np.zeros(FLAGS.test_count)
-for run in range(FLAGS.test_count)
+for run in range(FLAGS.test_count):
     # Define placeholders
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
