@@ -184,30 +184,31 @@ class GCNModelFeedback(Model):
         self.reconstructions = self.decoder(z)
         self.reconstructions_noiseless = self.decoder(z_noiseless)
 
-        hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
-                                      output_dim=FLAGS.hidden4,
+        hidden1 = Dense(input_dim=self.input_dim,
+                                      output_dim=self.output_dim,
                                       adj=self.adj,
-                                      act=tf.nn.relu,
+                                      act=lambda x: x,
                                       features_nonzero=self.features_nonzero,
+                                      sparse_inputs=True,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
-        hidden2 = GraphConvolution(input_dim=FLAGS.hidden2,
-                                      output_dim=FLAGS.hidden4,
+        hidden2 = Dense(input_dim=FLAGS.hidden2,
+                                      output_dim=self.output_dim,
                                       adj=self.adj,
-                                      act=tf.nn.relu,
+                                      act=lambda x: x,
                                       dropout=self.dropout,
                                       logging=self.logging)        
 
-        output = GraphConvolution(input_dim=FLAGS.hidden4,
-                                       output_dim=self.output_dim,
-                                       adj=self.adj,
-                                       act=lambda x: x,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
+        # output = GraphConvolution(input_dim=FLAGS.hidden4,
+        #                                output_dim=self.output_dim,
+        #                                adj=self.adj,
+        #                                act=lambda x: x,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
 
         self.outputs = hidden1(self.inputs) + hidden2(z_noiseless)
-        self.outputs = output(self.outputs)
+        # self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
 
