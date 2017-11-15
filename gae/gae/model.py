@@ -196,7 +196,7 @@ class GCNModelFeedback(Model):
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       adj = self.adj,
-                                      dropout=0.,
+                                      dropout=0.1,
                                       logging=self.logging)        
 
         output = GraphConvolution(input_dim=FLAGS.hidden4,
