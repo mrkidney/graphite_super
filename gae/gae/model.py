@@ -186,7 +186,6 @@ class GCNModelFeedback(Model):
 
         hidden1 = Dense(input_dim=self.input_dim,
                                       output_dim=self.output_dim,
-                                      adj=self.adj,
                                       act=lambda x: x,
                                       features_nonzero=self.features_nonzero,
                                       sparse_inputs=True,
@@ -195,7 +194,6 @@ class GCNModelFeedback(Model):
 
         hidden2 = Dense(input_dim=FLAGS.hidden2,
                                       output_dim=self.output_dim,
-                                      adj=self.adj,
                                       act=lambda x: x,
                                       dropout=self.dropout,
                                       logging=self.logging)        
