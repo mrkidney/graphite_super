@@ -172,7 +172,9 @@ for epoch in range(FLAGS.epochs):
     vals[epoch] = val_accuracy
     tests[epoch] = test_accuracy
 
-    roc = get_roc_score(val_edges, val_edges_false)[0]
+    roc = 0
+    if model_str == 'graphite':
+        roc = get_roc_score(val_edges, val_edges_false)[0]
 
     if FLAGS.verbose:
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
