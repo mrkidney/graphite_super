@@ -185,29 +185,29 @@ class GCNModelFeedback(Model):
         self.reconstructions_noiseless = self.decoder(z_noiseless)
 
         hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
-                                      output_dim=self.output_dim,
-                                      act=lambda x: x,
+                                      output_dim=FLAGS.hidden4,
+                                      act=tf.nn.relu,
                                       features_nonzero=self.features_nonzero,
                                       adj = self.adj,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
         hidden2 = GraphConvolution(input_dim=FLAGS.hidden2,
-                                      output_dim=self.output_dim,
-                                      act=lambda x: x,
+                                      output_dim=FLAGS.hidden4,
+                                      act=tf.nn.relu,
                                       adj = self.adj,
                                       dropout=0.,
                                       logging=self.logging)        
 
-        # output = GraphConvolution(input_dim=FLAGS.hidden4,
-        #                                output_dim=self.output_dim,
-        #                                adj=self.adj,
-        #                                act=lambda x: x,
-        #                                dropout=self.dropout,
-        #                                logging=self.logging)
+        output = GraphConvolution(input_dim=FLAGS.hidden4,
+                                       output_dim=self.output_dim,
+                                       adj=self.adj,
+                                       act=lambda x: x,
+                                       dropout=self.dropout,
+                                       logging=self.logging)
 
         self.outputs = hidden1(self.inputs) + hidden2(z_noiseless)
-        # self.outputs = output(self.outputs)
+        self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
 
