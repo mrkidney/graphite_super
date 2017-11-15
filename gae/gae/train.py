@@ -172,11 +172,12 @@ for epoch in range(FLAGS.epochs):
     vals[epoch] = val_accuracy
     tests[epoch] = test_accuracy
 
-    print(get_roc_score(val_edges, val_edges_false))
+    roc = get_roc_score(val_edges, val_edges_false)
 
     if FLAGS.verbose:
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-              "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
+              "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy),
+              "val_roc=", "{:.5f}".format(roc))
 
 arg = np.argmax(vals)
 print(arg)
