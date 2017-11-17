@@ -205,7 +205,7 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden1(self.inputs) + hidden2(0*tf.nn.sigmoid(z_noiseless))
+        self.outputs = hidden1(self.inputs) + hidden2(tf.nn.sigmoid(z_noiseless))
         self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
