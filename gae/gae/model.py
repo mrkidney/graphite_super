@@ -182,7 +182,6 @@ class GCNModelFeedback(Model):
           z = z_noiseless
 
         self.reconstructions = self.decoder(z)
-        self.reconstructions_noiseless = self.decoder(z_noiseless)
 
         hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
@@ -206,7 +205,7 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden1(self.inputs) + hidden2(tf.nn.relu(z_noiseless))
+        self.outputs = hidden1(self.inputs) + hidden2(0 * tf.nn.relu(z_noiseless))
         self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
