@@ -47,6 +47,8 @@ class OptimizerSemi(object):
             self.kl = (0.5 / num_nodes) * tf.reduce_mean(tf.reduce_sum(1 + 2 * model.z_log_std - tf.square(model.z_mean) - tf.square(tf.exp(model.z_log_std)), 1))
             self.cost -= self.kl
 
+        self.cost *= FLAGS.tau
+
         self.cost += FLAGS.weight_decay * model.weight_norm
 
         self.cost += masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
