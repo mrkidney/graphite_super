@@ -34,7 +34,7 @@ flags.DEFINE_integer('hidden4', 16, 'Number of units in hidden layer 4.')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
-flags.DEFINE_float('autoregressive_scalar', 0.2, 'Scale down contribution of autoregressive to final link prediction')
+flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
 
@@ -103,11 +103,15 @@ for run in range(FLAGS.test_count):
 
     # Optimizer
     with tf.name_scope('optimizer'):
-        opt = OptimizerSemi(preds=model.reconstructions,
+        opt = None
+        if model_str == 'graphite':
+            opt = OptimizerSemi(preds=model.reconstructions,
                            labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
                            model=model, num_nodes=num_nodes,
                            pos_weight=pos_weight,
                            norm=norm)
+        else:
+            opt = OptimizerSuper(model = model)
 
     os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
     if FLAGS.gpu == -1:

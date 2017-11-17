@@ -196,7 +196,7 @@ class GCNModelFeedback(Model):
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       adj = self.adj,
-                                      dropout=0.,
+                                      dropout=self.dropout,
                                       logging=self.logging)        
 
         output = GraphConvolution(input_dim=FLAGS.hidden4,
@@ -206,7 +206,7 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden1(self.inputs) + hidden2(z_noiseless)
+        self.outputs = hidden1(self.inputs) + hidden2(tf.nn.relu(z_noiseless))
         self.outputs = output(self.outputs)
 
         self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
