@@ -24,7 +24,7 @@ def masked_accuracy(preds, labels, mask):
 class OptimizerSuper(object):
     def __init__(self, model):
 
-        self.cost = FLAGS.weight_decay * model.weight_norm
+        self.cost = model.weight_norm
 
         self.cost += masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
 
@@ -49,7 +49,7 @@ class OptimizerSemi(object):
 
         self.cost *= FLAGS.tau
 
-        self.cost += FLAGS.weight_decay * model.weight_norm
+        self.cost += model.weight_norm
 
         self.cost += masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
 

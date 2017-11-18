@@ -79,7 +79,7 @@ class GCNModel(Model):
 
         self.outputs = output(hidden(inputs))
 
-        self.weight_norm = tf.nn.l2_loss(hidden.vars['weights'])# + tf.nn.l2_loss(output.vars['weights'])
+        self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden.vars['weights'])
 
 
 class GCNModelFeedback(Model):
@@ -208,6 +208,6 @@ class GCNModelFeedback(Model):
         self.outputs = hidden1(self.inputs) + hidden2(z)
         self.outputs = output(self.outputs)
 
-        self.weight_norm = tf.nn.l2_loss(hidden1.vars['weights']) + FLAGS.emb_decay * tf.nn.l2_loss(hidden2.vars['weights'])
+        self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights']) + FLAGS.emb_decay * tf.nn.l2_loss(hidden2.vars['weights'])
 
 
