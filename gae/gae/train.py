@@ -38,6 +38,7 @@ flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of auto
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
 flags.DEFINE_float('emb_dropout', 0.5, 'scalar on embedding dropout')
+flags.DEFINE_float('emb_decay', 1, 'scalar on emb weight')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('pick_best', 1, 'choose arg based on val')
