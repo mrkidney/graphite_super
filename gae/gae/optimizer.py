@@ -57,5 +57,5 @@ class OptimizerSemi(object):
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
-        self.accuracy = masked_accuracy(model.outputs, model.labels, model.labels_mask)
+        self.accuracy = masked_accuracy(model.outputs_noiseless, model.labels, model.labels_mask)
 
