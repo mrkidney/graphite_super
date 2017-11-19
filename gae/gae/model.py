@@ -171,7 +171,7 @@ class GCNModelFeedback(Model):
         reconstructions = l3(update)
 
         reconstructions = tf.reshape(reconstructions, [-1])
-        return reconstructions
+        return reconstructions, update
 
     def _build(self):
   
@@ -181,7 +181,8 @@ class GCNModelFeedback(Model):
         if not FLAGS.vae:
           z = z_noiseless
 
-        self.reconstructions = self.decoder(z)
+        self.reconstructions, _ = self.decoder(z)
+        _, z_f = self.decoder(z_noiseless)
 
         hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
@@ -205,7 +206,8 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-        self.outputs = hidden1(self.inputs) + hidden2(z)
+        # self.outputs = hidden1(self.inputs) + hidden2(z)
+        self.outputs = hidden1(self.inputs) + hidden2(z_f)
         self.outputs = output(self.outputs)
 
         self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights']) + FLAGS.emb_decay * tf.nn.l2_loss(hidden2.vars['weights'])
