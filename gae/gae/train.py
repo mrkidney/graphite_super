@@ -37,7 +37,6 @@ flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training
 flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
-flags.DEFINE_float('emb_dropout', 0.5, 'scalar on embedding dropout')
 flags.DEFINE_float('emb_decay', 1, 'scalar on emb weight')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
