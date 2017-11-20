@@ -184,24 +184,44 @@ class GCNModelFeedback(Model):
         self.reconstructions, _ = self.decoder(z)
         _, z_f = self.decoder(z_noiseless)
 
-        hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        # hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        #                               output_dim=FLAGS.hidden4,
+        #                               act=tf.nn.relu,
+        #                               features_nonzero=self.features_nonzero,
+        #                               adj = self.adj,
+        #                               dropout=self.dropout,
+        #                               logging=self.logging)
+
+        # hidden2 = GraphConvolution(input_dim=FLAGS.hidden2,
+        #                               output_dim=FLAGS.hidden4,
+        #                               act=tf.nn.relu,
+        #                               adj = self.adj,
+        #                               dropout=0.,
+        #                               logging=self.logging)        
+
+        # output = GraphConvolution(input_dim=FLAGS.hidden4,
+        #                                output_dim=self.output_dim,
+        #                                adj=self.adj,
+        #                                act=lambda x: x,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
+
+        hidden1 = Dense(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       features_nonzero=self.features_nonzero,
-                                      adj = self.adj,
+                                      sparse_inputs = True,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
-        hidden2 = GraphConvolution(input_dim=FLAGS.hidden2,
+        hidden2 = Dense(input_dim=FLAGS.hidden2,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
-                                      adj = self.adj,
                                       dropout=0.,
                                       logging=self.logging)        
 
-        output = GraphConvolution(input_dim=FLAGS.hidden4,
+        output = Dense(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
-                                       adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
