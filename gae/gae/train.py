@@ -84,7 +84,6 @@ for run in range(FLAGS.test_count):
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
         'adj': tf.sparse_placeholder(tf.float32),
-        'adj_full': tf.sparse_placeholder(tf.float32),
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1])),
@@ -137,19 +136,19 @@ for run in range(FLAGS.test_count):
         else:
             adj_norm_mini = adj_norm
 
-        feed_dict = construct_feed_dict(adj_norm_mini, adj_norm, adj_label, features, y_train, train_mask, placeholders)
+        feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
-        feed_dict = construct_feed_dict(adj_norm, adj_norm, adj_label, features, y_val, val_mask, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
         val_accuracy = outs[1]
 
-        feed_dict = construct_feed_dict(adj_norm, adj_norm, adj_label, features, y_test, test_mask, placeholders)
+        feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_test, test_mask, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
         test_accuracy = outs[1]
