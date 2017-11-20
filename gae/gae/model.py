@@ -92,6 +92,7 @@ class GCNModelFeedback(Model):
         self.features_nonzero = features_nonzero
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
+        self.adj_full = placeholders['adj_full']
         self.dropout = placeholders['dropout']
         self.adj_label = placeholders['adj_orig']
         self.labels = placeholders['labels']
@@ -188,20 +189,20 @@ class GCNModelFeedback(Model):
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       features_nonzero=self.features_nonzero,
-                                      adj = self.adj,
+                                      adj = self.adj_full,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
         hidden2 = GraphConvolution(input_dim=FLAGS.hidden2,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
-                                      adj = self.adj,
+                                      adj = self.adj_full,
                                       dropout=0.,
                                       logging=self.logging)        
 
         output = GraphConvolution(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
-                                       adj=self.adj,
+                                       adj=self.adj_full,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
