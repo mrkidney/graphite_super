@@ -5,6 +5,7 @@ import time
 import os
 import sys
 
+
 import tensorflow as tf
 import numpy as np
 import scipy.sparse as sp
