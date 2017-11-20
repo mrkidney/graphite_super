@@ -47,12 +47,13 @@ def preprocess_graph(adj):
     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
     return sparse_to_tuple(adj_normalized)
 
-def construct_feed_dict(adj_normalized, adj, features, labels, labels_mask, placeholders):
+def construct_feed_dict(adj_normalized, adj_normalized_full, adj, features, labels, labels_mask, placeholders):
     # construct feed dictionary
     feed_dict = dict()
     feed_dict.update({placeholders['labels']: labels})
     feed_dict.update({placeholders['labels_mask']: labels_mask})
     feed_dict.update({placeholders['adj']: adj_normalized})
+    feed_dict.update({placeholders['adj_full']: adj_normalized_full})
     feed_dict.update({placeholders['adj_orig']: adj})
     feed_dict.update({placeholders['features']: features})
     return feed_dict
