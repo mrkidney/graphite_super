@@ -199,6 +199,13 @@ class GCNModelFeedback(Model):
                                       dropout=0.,
                                       logging=self.logging)        
 
+        hidden3 = GraphConvolution(input_dim=FLAGS.hidden2,
+                                      output_dim=FLAGS.hidden4,
+                                      act=tf.nn.relu,
+                                      adj = self.adj,
+                                      dropout=0.,
+                                      logging=self.logging)  
+
         output = GraphConvolution(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
@@ -207,10 +214,12 @@ class GCNModelFeedback(Model):
                                        logging=self.logging)
 
 
-        # self.outputs = hidden1(self.inputs) + hidden2(z)
-        self.outputs = hidden1(self.inputs) + hidden2(z_f)
+        self.outputs = hidden1(self.inputs) + hidden2(self.z_mean) + hidden3(self.z_log_std)
+        # self.outputs = hidden1(self.inputs) + hidden2(z_f)
         self.outputs = output(self.outputs)
 
-        self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights']) + FLAGS.emb_decay * tf.nn.l2_loss(hidden2.vars['weights'])
+        self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights'])
+        self.weight_norm += FLAGS.mu_decay * tf.nn.l2_loss(hidden2.vars['weights'])
+        self.weight_norm += FLAGS.sigma_decay * tf.nn.l2_loss(hidden2.vars['weights'])
 
 

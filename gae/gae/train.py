@@ -38,7 +38,8 @@ flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training
 flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
-flags.DEFINE_float('emb_decay', 1, 'scalar on emb weight')
+flags.DEFINE_float('mu_decay', 1, 'scalar on mu weight')
+flags.DEFINE_float('sigma_decay', 1, 'scalar on sigma weight')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('pick_best', 1, 'choose arg based on val')
@@ -49,37 +50,26 @@ flags.DEFINE_string('model', 'graphite', 'Model string.')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
 
+dataset_str = FLAGS.dataset
+model_str = FLAGS.model
 
 if FLAGS.seeded:
     np.random.seed(123)
     tf.set_random_seed(123)
 
-dataset_str = FLAGS.dataset
-model_str = FLAGS.model
-
-# Load data
-adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset_str)
-adj_def = adj
-
-
-# adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = get_test_edges(adj_def)
-# val_edges = tuple(zip(*val_edges))
-# val_edges_false = tuple(zip(*val_edges_false))
-# test_edges = tuple(zip(*test_edges))
-# test_edges_false = tuple(zip(*test_edges_false))
-# adj = adj_train
-
-adj_norm = preprocess_graph(adj)
-adj_label = adj + sp.eye(adj.shape[0])
-adj_label = sparse_to_tuple(adj_label)
-
-#features = sparse_to_tuple(features.tocoo())
-features = preprocess_features(features)
-num_features = features[2][1]
-features_nonzero = features[1].shape[0]
-
 runs = np.zeros(FLAGS.test_count)
 for run in range(FLAGS.test_count):
+
+    adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset_str)
+    adj_def = adj
+
+    adj_norm = preprocess_graph(adj)
+    adj_label = adj + sp.eye(adj.shape[0])
+    adj_label = sparse_to_tuple(adj_label)
+
+    features = preprocess_features(features)
+    num_features = features[2][1]
+    features_nonzero = features[1].shape[0]
     # Define placeholders
     placeholders = {
         'features': tf.sparse_placeholder(tf.float32),
