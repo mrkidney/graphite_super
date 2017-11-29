@@ -56,18 +56,6 @@ def load_data(dataset_str):
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+500)
 
-    #Randomize split
-    idx_all = range(labels.shape[0])
-    shuffle(idx_all)
-
-    idx_test = idx_all[:len(idx_test)]
-    idx_all = idx_all[len(idx_test):]
-
-    idx_train = idx_all[:len(idx_train)]
-    idx_all = idx_all[len(idx_train):]
-
-    idx_val = idx_all[:len(idx_val)]
-
     train_mask = sample_mask(idx_train, labels.shape[0])
     val_mask = sample_mask(idx_val, labels.shape[0])
     test_mask = sample_mask(idx_test, labels.shape[0])
