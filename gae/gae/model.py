@@ -220,6 +220,6 @@ class GCNModelFeedback(Model):
 
         self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights'])
         self.weight_norm += FLAGS.mu_decay * tf.nn.l2_loss(hidden2.vars['weights'])
-        self.weight_norm += FLAGS.sigma_decay * tf.nn.l2_loss(hidden2.vars['weights'])
+        self.weight_norm += FLAGS.sigma_decay * tf.nn.l2_loss(hidden3.vars['weights'])
 
 
