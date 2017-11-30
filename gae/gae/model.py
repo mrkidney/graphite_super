@@ -195,7 +195,7 @@ class GCNModelFeedback(Model):
         hidden1 = GraphConvolutionDense(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
-                                      sparse_inputs = True,,
+                                      sparse_inputs = True,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
