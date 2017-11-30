@@ -182,13 +182,20 @@ class GCNModelFeedback(Model):
           z = z_noiseless
 
         self.reconstructions, _ = self.decoder(z)
-        _, z_f = self.decoder(z_noiseless)
+        recon_f, z_f = self.decoder(z_noiseless)
 
-        hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        # hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
+        #                               output_dim=FLAGS.hidden4,
+        #                               act=tf.nn.relu,
+        #                               features_nonzero=self.features_nonzero,
+        #                               adj = self.adj,
+        #                               dropout=self.dropout,
+        #                               logging=self.logging)
+
+        hidden1 = GraphConvolutionDense(input_dim=self.input_dim,
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
-                                      features_nonzero=self.features_nonzero,
-                                      adj = self.adj,
+                                      sparse_inputs = True,,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
@@ -206,20 +213,30 @@ class GCNModelFeedback(Model):
                                       dropout=0.,
                                       logging=self.logging)  
 
-        output = GraphConvolution(input_dim=FLAGS.hidden4,
+        # output = GraphConvolution(input_dim=FLAGS.hidden4,
+        #                                output_dim=self.output_dim,
+        #                                adj=self.adj,
+        #                                act=lambda x: x,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
+
+
+        output = GraphConvolutionDense(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
 
-
-        self.outputs = hidden1(self.inputs) + hidden2(self.z_mean) + hidden3(self.z_log_std)
+        # self.outputs = hidden1(self.inputs) + hidden2(self.z_mean) + hidden3(self.z_log_std)
         # self.outputs = hidden1(self.inputs) + hidden2(z_f)
-        self.outputs = output(self.outputs)
+        # self.outputs = output(self.outputs)
+
+        self.outputs = hidden1((self.inputs, recon_f))
+        self.outputs = output((self.outputs, recon_f))
 
         self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights'])
-        self.weight_norm += FLAGS.mu_decay * tf.nn.l2_loss(hidden2.vars['weights'])
-        self.weight_norm += FLAGS.sigma_decay * tf.nn.l2_loss(hidden3.vars['weights'])
+        # self.weight_norm += FLAGS.mu_decay * tf.nn.l2_loss(hidden2.vars['weights'])
+        # self.weight_norm += FLAGS.sigma_decay * tf.nn.l2_loss(hidden3.vars['weights'])
 
 
