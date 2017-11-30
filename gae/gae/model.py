@@ -183,7 +183,7 @@ class GCNModelFeedback(Model):
 
         self.reconstructions, _ = self.decoder(z)
         recon_f, z_f = self.decoder(z_noiseless)
-        recon_f = tf.reshape(recon_f, [n_samples, n_samples])
+        recon_f = tf.reshape(recon_f, [self.n_samples, self.n_samples])
 
         # hidden1 = GraphConvolutionSparse(input_dim=self.input_dim,
         #                               output_dim=FLAGS.hidden4,
