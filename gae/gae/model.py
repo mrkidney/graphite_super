@@ -197,6 +197,7 @@ class GCNModelFeedback(Model):
                                       output_dim=FLAGS.hidden4,
                                       act=tf.nn.relu,
                                       sparse_inputs = True,
+                                      features_nonzero=self.features_nonzero,
                                       dropout=self.dropout,
                                       logging=self.logging)
 
