@@ -223,7 +223,6 @@ class GCNModelFeedback(Model):
 
         output = GraphConvolutionDense(input_dim=FLAGS.hidden4,
                                        output_dim=self.output_dim,
-                                       adj=self.adj,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
