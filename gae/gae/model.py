@@ -184,7 +184,7 @@ class GCNModelFeedback(Model):
         self.reconstructions, _ = self.decoder(z)
         recon, z_f = self.decoder(z_noiseless)
         recon = tf.reshape(recon, [self.n_samples, self.n_samples])
-        recon = tf.nn.sigmoid(recon)
+        recon = tf.nn.sigmoid(100 * recon)
         d = tf.reduce_sum(recon, 1)
         d = tf.pow(d, -0.5)
         recon = tf.expand_dims(d, 0) * recon * tf.expand_dims(d, 1)
