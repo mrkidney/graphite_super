@@ -236,8 +236,8 @@ class GCNModelFeedback(Model):
         # self.outputs = hidden1(self.inputs) + hidden2(self.z_mean) + hidden3(self.z_log_std)
         # self.outputs = output(self.outputs)
 
-        self.outputs = hidden1((self.inputs, recon_f))
-        self.outputs = output((self.outputs, recon_f))
+        self.outputs = hidden1((self.inputs, recon))
+        self.outputs = output((self.outputs, recon))
 
         self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden1.vars['weights'])
         # self.weight_norm += FLAGS.mu_decay * tf.nn.l2_loss(hidden2.vars['weights'])
