@@ -137,17 +137,32 @@ class GCNModelFeedback(Model):
                                           dropout=0.,
                                           logging=self.logging)
 
+        # self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
+        #                                       output_dim=FLAGS.hidden_y,
+        #                                       adj=self.adj,
+        #                                       features_nonzero=self.features_nonzero,
+        #                                       act=tf.nn.relu,
+        #                                       dropout=self.dropout,
+        #                                       logging=self.logging)
+
+        # self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
+        #                                output_dim=FLAGS.hidden_y,
+        #                                act=tf.nn.relu,
+        #                                adj=self.adj,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
+
         self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden_y,
+                                              output_dim=self.output_dim,
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
-                                              act=tf.nn.relu,
+                                              act=lambda x: x,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
         self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
-                                       output_dim=FLAGS.hidden_y,
-                                       act=tf.nn.relu,
+                                       output_dim=self.output_dim,
+                                       act=lambda x: x,
                                        adj=self.adj,
                                        dropout=self.dropout,
                                        logging=self.logging)
@@ -226,9 +241,10 @@ class GCNModelFeedback(Model):
         # mean, variance = tf.nn.moments(z1, axes = [0])
         # emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
         # graph = self.reconstruct_graph(emb, activate = True, normalize = True)
-        
+
         hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1)
-        return self.y_layer(hidden)
+        #return self.y_layer(hidden)
+        return hidden
 
     def encoder_z2(self, z1, y):
         prior_full = tf.concat((z1, y), axis = 1)
