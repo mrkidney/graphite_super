@@ -28,18 +28,20 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
-flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('hidden3', 32, 'Number of units in hidden layer 3.')
-flags.DEFINE_integer('hidden4', 16, 'Number of units in hidden layer 4.')
+flags.DEFINE_integer('dim_z1', 16, '')
+flags.DEFINE_integer('dim_z2', 16, '')
+flags.DEFINE_integer('hidden_z1q', 32, '')
+flags.DEFINE_integer('hidden_z1p', 32, '')
+flags.DEFINE_integer('hidden_z2', 32, '')
+flags.DEFINE_integer('hidden_y', 16, '')
+flags.DEFINE_integer('hidden_x', 32, '')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
+flags.DEFINE_float('z1_decay', 0., 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
 flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
-flags.DEFINE_integer('vae', 1, '1 for doing VGAE embeddings first')
+flags.DEFINE_float('alpha', 1., 'scalar on reconstruction error')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
-flags.DEFINE_float('mu_decay', 1, 'scalar on mu weight')
-flags.DEFINE_float('sigma_decay', 1, 'scalar on sigma weight')
 
 flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('pick_best', 1, 'choose arg based on val')
@@ -48,7 +50,7 @@ flags.DEFINE_integer('test_count', 100, 'batch of tests')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'graphite', 'Model string.')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
-flags.DEFINE_integer('seeded', 1, 'Set numpy random seed')
+flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
 
 dataset_str = FLAGS.dataset
 model_str = FLAGS.model
@@ -77,7 +79,7 @@ for run in range(FLAGS.test_count):
         'adj_orig': tf.sparse_placeholder(tf.float32),
         'dropout': tf.placeholder_with_default(0., shape=()),
         'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1])),
-        'labels_mask': tf.placeholder(tf.int32)
+        'labels_mask': tf.placeholder(tf.int32),
     }
 
     num_nodes = adj.shape[0]
@@ -133,6 +135,10 @@ for run in range(FLAGS.test_count):
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
+        # checks = sess.run([opt.A], feed_dict=feed_dict)
+        # np.set_printoptions(threshold=np.nan)
+        # print(checks)
+
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
         outs = sess.run([opt.cost, opt.accuracy], feed_dict=feed_dict)
@@ -146,14 +152,9 @@ for run in range(FLAGS.test_count):
         vals[epoch] = val_accuracy
         tests[epoch] = test_accuracy
 
-        roc = 0
-        # if model_str == 'graphite':
-        #     roc = get_roc_score(val_edges, val_edges_false)[0]
-
         if FLAGS.verbose:
             print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-                  "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy),
-                  "val_roc=", "{:.5f}".format(roc))
+                  "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
 
     if FLAGS.pick_best:
         arg = np.argmax(vals)
