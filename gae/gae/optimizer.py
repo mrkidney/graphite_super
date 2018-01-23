@@ -32,9 +32,13 @@ def masked_accuracy(preds, labels, mask):
     accuracy_all *= mask
     return tf.reduce_mean(accuracy_all)
 
-def log_normal_pdf_tf(mean, log_std, obs):
-    dist = tf.contrib.distributions.MultivariateNormalDiag(mean, tf.exp(log_std))
-    return dist.log_prob(obs)
+# def log_normal_pdf_tf(mean, log_std, obs):
+#     dist = tf.contrib.distributions.MultivariateNormalDiag(mean, tf.exp(log_std))
+#     return dist.log_prob(obs)
+
+def log_normal_pdf_tf(mean, log_std, obs, dim = 7):
+    pdf = -0.5 * (tf.square(obs - mean) * tf.exp(-2.0 * log_std)) - 0.5 * (dim * tf.log(2 * np.pi) + 2 * log_std)
+    return tf.reduce_sum(pdf, 1)
 
 # def kl_categorical(probs, prior):
 #     probs_dist = tf.contrib.distributions.Categorical(probs)
@@ -80,11 +84,12 @@ class OptimizerSemi(object):
         y_semi = y_semi_supervised(tf.nn.softmax(model.y), model.labels, model.labels_mask)
         y_prior = y_prior_distribution(model.labels, model.labels_mask, model.output_dim)
 
-        self.A = (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
-
-        # self.cost += (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
+        self.cost += (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
 
         self.cost += (1.0 / num_nodes) * tf.reduce_mean(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q))
+
+        self.A = (1.0 / num_nodes) * tf.reduce_mean(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q))
+        self.B = 0
 
         for label in range(model.output_dim):
             y_pos = tf.one_hot(indices = label, depth = model.output_dim)
@@ -95,9 +100,8 @@ class OptimizerSemi(object):
             z1p_mean, z1p_log_std = model.decoder_z1(z2, y_pos)
 
             self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * kl(z2_mean, z2_log_std))
-            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q))
-
-        # self.cost -= (1.0 / num_nodes) * tf.reduce_mean(kl(model.z1q_mean, model.z1q_log_std))
+            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * tf.maximum(log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q), -100))
+            self.B += (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q))
         
         self.cost *= FLAGS.tau
 

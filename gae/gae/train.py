@@ -31,8 +31,8 @@ flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('dim_z1', 16, '')
 flags.DEFINE_integer('dim_z2', 16, '')
 flags.DEFINE_integer('hidden_z1q', 32, '')
-flags.DEFINE_integer('hidden_z1p', 32, '')
-flags.DEFINE_integer('hidden_z2', 32, '')
+flags.DEFINE_integer('hidden_z1p', 16, '')
+flags.DEFINE_integer('hidden_z2', 16, '')
 flags.DEFINE_integer('hidden_y', 16, '')
 flags.DEFINE_integer('hidden_x', 32, '')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
@@ -130,14 +130,14 @@ for run in range(FLAGS.test_count):
 
         feed_dict = construct_feed_dict(adj_norm_mini, adj_label, features, y_train, train_mask, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
 
-        avg_cost = outs[1]
-        avg_accuracy = outs[2]
-
-        # checks = sess.run([opt.A], feed_dict=feed_dict)
+        # checks = sess.run([opt.A, opt.B], feed_dict=feed_dict)
         # np.set_printoptions(threshold=np.nan)
         # print(checks)
+
+        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy], feed_dict=feed_dict)
+        avg_cost = outs[1]
+        avg_accuracy = outs[2]
 
         feed_dict = construct_feed_dict(adj_norm, adj_label, features, y_val, val_mask, placeholders)
         feed_dict.update({placeholders['dropout']: 0.})
