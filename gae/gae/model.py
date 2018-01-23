@@ -241,12 +241,12 @@ class GCNModelFeedback(Model):
         return self.z1p_mean_layer(hidden), self.z1p_log_std_layer(hidden)
 
     def decoder_x(self, z1):
-        # graph = self.reconstruct_graph(z1)
+        graph = self.reconstruct_graph(z1)
 
-        # hidden = self.hidden_x_z1_layer((z1, graph)) + self.hidden_x_input_layer((self.inputs, graph))
-        # emb = self.x_layer((hidden, graph))
+        hidden = self.hidden_x_z1_layer((z1, graph)) + self.hidden_x_input_layer((self.inputs, graph))
+        emb = self.x_layer((hidden, graph))
 
-        # emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
+        emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
 
         emb = z1
         reconstructions = self.reconstruct_graph(emb, activate = False, normalize = False)
