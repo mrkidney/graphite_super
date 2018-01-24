@@ -167,4 +167,5 @@ for run in range(FLAGS.test_count):
         break
 
 if not FLAGS.verbose:
+    print(runs)
     print((np.mean(runs), stats.sem(runs)))
