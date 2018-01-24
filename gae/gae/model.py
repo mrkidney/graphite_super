@@ -152,8 +152,17 @@ class GCNModelFeedback(Model):
                                        dropout=self.dropout,
                                        logging=self.logging)
 
+        self.hidden_y_layer_graphite = GraphConvolutionDense(input_dim=self.input_dim,
+                                       output_dim=FLAGS.hidden_y,
+                                       act=tf.nn.relu,
+                                       sparse_inputs = True,
+                                       features_nonzero=self.features_nonzero,
+                                       dropout=self.dropout,
+                                       logging=self.logging)
+
         self.weight_norm += FLAGS.weight_decay * tf.nn.l2_loss(self.hidden_y_layer_x.vars['weights'])
         self.weight_norm += FLAGS.z1_decay * tf.nn.l2_loss(self.hidden_y_layer_z1.vars['weights'])
+        self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.hidden_y_layer_graphite.vars['weights'])
 
         self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
                                        output_dim=self.output_dim,
@@ -223,11 +232,11 @@ class GCNModelFeedback(Model):
         return self.z1q_mean_layer(hidden), self.z1q_log_std_layer(hidden)
 
     def encoder_y(self, z1, inputs):
-        # mean, variance = tf.nn.moments(z1, axes = [0])
-        # emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
-        # graph = self.reconstruct_graph(emb, activate = True, normalize = True)
+        mean, variance = tf.nn.moments(z1, axes = [0])
+        emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
+        graph = self.reconstruct_graph(emb, activate = True, normalize = True)
 
-        hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1)
+        hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
         return self.y_layer(hidden)
 
     def encoder_z2(self, z1, y):
