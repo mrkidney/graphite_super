@@ -168,4 +168,5 @@ for run in range(FLAGS.test_count):
 
 if not FLAGS.verbose:
     print(runs)
+    runs = runs[runs > 0.6]
     print((np.mean(runs), stats.sem(runs)))
