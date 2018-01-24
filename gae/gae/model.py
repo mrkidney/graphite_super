@@ -248,10 +248,9 @@ class GCNModelFeedback(Model):
 
         emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
 
-        emb = z1
         reconstructions = self.reconstruct_graph(emb, activate = False, normalize = False)
 
-        return tf.reshape(reconstructions, [-1])
+        return tf.reshape(reconstructions, [-1]), emb
 
     def _build(self):
         self.define_layers()
@@ -259,9 +258,10 @@ class GCNModelFeedback(Model):
         self.z1q_mean, self.z1q_log_std = self.encoder_z1(self.inputs)
         self.z1q = self.sample(self.z1q_mean, self.z1q_log_std, FLAGS.dim_z1)
 
-        self.reconstructions = self.decoder_x(self.z1q)
+        self.reconstructions, self.zf = self.decoder_x(self.z1q)
 
-        self.y = self.encoder_y(self.z1q, self.inputs)
+        #self.y = self.encoder_y(self.z1q, self.inputs)
+        self.y = self.encoder_y(self.zf, self.inputs)
         self.outputs = self.encoder_y(self.z1q_mean, self.inputs)
 
 
