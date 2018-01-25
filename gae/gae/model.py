@@ -106,6 +106,7 @@ class GCNModelFeedback(Model):
         if activate:
           graph = tf.nn.sigmoid(graph)
         if normalize:
+          graph = tf.nn.dropout(graph, 1-self.dropout*FLAGS.graphite_dropout)
           graph = graph + tf.eye(tf.shape(graph)[0])
           d = tf.reduce_sum(graph, 1)
           d = tf.pow(d, -0.5)
