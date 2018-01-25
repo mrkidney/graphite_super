@@ -162,6 +162,8 @@ for run in range(FLAGS.test_count):
     else:
         arg = FLAGS.epochs - 1
     runs[run] = tests[arg]
+    if np.isnan(tests[-1]):
+        runs[run] = -1
     if FLAGS.verbose:
         print(arg)
         print(tests[arg])
@@ -169,5 +171,5 @@ for run in range(FLAGS.test_count):
 
 if not FLAGS.verbose:
     print(runs)
-    runs = runs[runs > 0.6]
+    runs = runs[runs > 0]
     print((np.mean(runs), stats.sem(runs)))
