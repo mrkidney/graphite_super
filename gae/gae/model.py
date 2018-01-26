@@ -234,10 +234,9 @@ class GCNModelFeedback(Model):
         return self.z1q_mean_layer(hidden), self.z1q_log_std_layer(hidden)
 
     def encoder_y(self, z1, inputs):
-        # mean, variance = tf.nn.moments(z1, axes = [0])
-        # emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
-        emb = z1
-        graph = self.reconstruct_graph(emb)
+        mean, variance = tf.nn.moments(z1, axes = [0])
+        emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
+        graph = 0.5 * (self.reconstruct_graph(emb) + tf.sparse_to_dense(self.adj))
 
         hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
         return self.y_layer(hidden)
