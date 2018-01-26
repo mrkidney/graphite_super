@@ -100,13 +100,14 @@ class GCNModelFeedback(Model):
     def sample(self, mean, log_std, dim):
         return mean + tf.random_normal([self.n_samples, dim]) * tf.exp(log_std)
 
-    def reconstruct_graph(self, emb, activate = True, normalize = True):
+    def reconstruct_graph(self, emb, activate = True, dropout = True, normalize = True):
         embT = tf.transpose(emb)
         graph = tf.matmul(emb, embT)
         if activate:
           graph = tf.nn.sigmoid(graph)
-        if normalize:
+        if dropout:
           graph = tf.nn.dropout(graph, 1-self.dropout*FLAGS.graphite_dropout)
+        if normalize:
           graph = graph + tf.eye(tf.shape(graph)[0])
           d = tf.reduce_sum(graph, 1)
           d = tf.pow(d, -0.5)
@@ -163,15 +164,14 @@ class GCNModelFeedback(Model):
 
         self.weight_norm += FLAGS.weight_decay * tf.nn.l2_loss(self.hidden_y_layer_x.vars['weights'])
         self.weight_norm += FLAGS.z1_decay * tf.nn.l2_loss(self.hidden_y_layer_z1.vars['weights'])
-        #self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.hidden_y_layer_graphite.vars['weights'])
+        self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.hidden_y_layer_graphite.vars['weights'])
 
-        self.y_layer = GraphConvolutionDense(input_dim=FLAGS.hidden_y,
+        self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
                                        output_dim=self.output_dim,
                                        act=lambda x: x,
+                                       adj=self.adj,
                                        dropout=self.dropout,
                                        logging=self.logging)
-
-        self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.y_layer.vars['weights'])
 
         self.hidden_z2_layer = Dense(input_dim=FLAGS.dim_z1 + self.output_dim,
                                        output_dim=FLAGS.hidden_z2,
@@ -236,13 +236,10 @@ class GCNModelFeedback(Model):
     def encoder_y(self, z1, inputs):
         mean, variance = tf.nn.moments(z1, axes = [0])
         emb = tf.nn.batch_normalization(z1, mean, variance, None, None, 1e-8)
-        graph = self.reconstruct_graph(emb, activate = True, normalize = True)
+        graph = self.reconstruct_graph(emb)
 
-        # hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
-        # return self.y_layer(hidden)
-
-        hidden = self.hidden_y_layer_x(inputs)
-        return self.y_layer((hidden, graph))
+        hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
+        return self.y_layer(hidden)
 
     def encoder_z2(self, z1, y):
         prior_full = tf.concat((z1, y), axis = 1)
@@ -255,14 +252,14 @@ class GCNModelFeedback(Model):
         return self.z1p_mean_layer(hidden), self.z1p_log_std_layer(hidden)
 
     def decoder_x(self, z1):
-        graph = self.reconstruct_graph(z1)
+        graph = self.reconstruct_graph(z1, dropout = False)
 
         hidden = self.hidden_x_z1_layer((z1, graph)) + self.hidden_x_input_layer((self.inputs, graph))
         emb = self.x_layer((hidden, graph))
 
         emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
 
-        reconstructions = self.reconstruct_graph(emb, activate = False, normalize = False)
+        reconstructions = self.reconstruct_graph(emb, activate = False, dropout = False, normalize = False)
 
         return tf.reshape(reconstructions, [-1]), emb
 
