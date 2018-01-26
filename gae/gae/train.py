@@ -40,7 +40,7 @@ flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix
 flags.DEFINE_float('z1_decay', 0., 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('graphite_decay', 0., 'Weight for L2 loss on graphite matrix.')
 flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
-flags.DEFINE_float('graphite_dropout', 1., 'Dropout for graphite recon graph')
+flags.DEFINE_float('graphite_dropout', 0., 'Dropout for graphite recon graph')
 flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_float('alpha', 1., 'scalar on reconstruction error')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
