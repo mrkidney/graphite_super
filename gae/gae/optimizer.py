@@ -103,7 +103,7 @@ class OptimizerSemi(object):
 
         self.cost *= FLAGS.tau
 
-        self.cost += FLAGS.alpha * masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
+        self.cost += FLAGS.alpha * masked_softmax_cross_entropy(model.y, model.labels, model.labels_mask)
         self.cost += model.weight_norm
 
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer

@@ -231,9 +231,13 @@ class GCNModelFeedback(Model):
         hidden = self.hidden_z1q_layer(inputs)
         return self.z1q_mean_layer(hidden), self.z1q_log_std_layer(hidden)
 
-    def encoder_y(self, z1, inputs):
+    def encoder_y(self, z1, inputs, sampling):
         graph = self.reconstruct_graph(z1)
-        condition = tf.random_uniform([self.n_samples, self.n_samples]) - graph < 0
+        if sampling:
+          sample = tf.random_uniform([self.n_samples, self.n_samples])
+        else:
+          sample = tf.zeros([self.n_samples, self.n_samples]) + 0.5
+        condition = sample - graph < 0 
         graph = tf.where(condition, tf.ones_like(graph), tf.zeros_like(graph))
 
         # hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
@@ -273,7 +277,7 @@ class GCNModelFeedback(Model):
         self.reconstructions, _ = self.decoder_x(self.z1q)
         _, self.zf = self.decoder_x(self.z1q_mean)
 
-        self.y = self.encoder_y(self.zf, self.inputs)
-        self.outputs = self.encoder_y(self.zf, self.inputs)
+        self.y = self.encoder_y(self.zf, self.inputs, True)
+        self.outputs = self.encoder_y(self.zf, self.inputs, False)
 
 
