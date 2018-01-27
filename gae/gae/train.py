@@ -104,7 +104,7 @@ for run in range(FLAGS.test_count):
                            model=model, num_nodes=num_nodes,
                            pos_weight=pos_weight,
                            norm=norm)
-        else if model_str == 'graphite_kingma':
+        elif model_str == 'graphite_kingma':
             opt = OptimizerSemiGen(preds=model.reconstructions,
                            labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
                            model=model, num_nodes=num_nodes,
