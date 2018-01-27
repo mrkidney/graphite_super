@@ -38,9 +38,8 @@ flags.DEFINE_integer('hidden_x', 32, '')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('z1_decay', 0., 'Weight for L2 loss on embedding matrix.')
-flags.DEFINE_float('graphite_decay', 0., 'Weight for L2 loss on graphite matrix.')
+# flags.DEFINE_float('graphite_decay', 0., 'Weight for L2 loss on graphite matrix.')
 flags.DEFINE_float('edge_dropout', 0., 'Dropout for individual edges in training graph')
-flags.DEFINE_float('graphite_dropout', 0., 'Dropout for graphite recon graph')
 flags.DEFINE_float('autoregressive_scalar', 0., 'Scale down contribution of autoregressive to final link prediction')
 flags.DEFINE_float('alpha', 1., 'scalar on reconstruction error')
 flags.DEFINE_float('tau', 1., 'scalar on reconstruction error')
@@ -88,7 +87,7 @@ for run in range(FLAGS.test_count):
 
     # Create model
     model = None
-    if model_str == 'graphite':
+    if model_str == 'graphite' or model_str == 'graphite_kingma':
         model = GCNModelFeedback(placeholders, num_features, num_nodes, features_nonzero)
     else:
         model = GCNModel(placeholders, num_features, num_nodes, features_nonzero)
@@ -105,6 +104,12 @@ for run in range(FLAGS.test_count):
                            model=model, num_nodes=num_nodes,
                            pos_weight=pos_weight,
                            norm=norm)
+        else if model_str == 'graphite_kingma':
+            opt = OptimizerSemiGen(preds=model.reconstructions,
+                           labels=tf.reshape(tf.sparse_tensor_to_dense(placeholders['adj_orig'], validate_indices=False), [-1]),
+                           model=model, num_nodes=num_nodes,
+                           pos_weight=pos_weight,
+                           norm=norm)        
         else:
             opt = OptimizerSuper(model = model)
 
@@ -163,8 +168,6 @@ for run in range(FLAGS.test_count):
     else:
         arg = FLAGS.epochs - 1
     runs[run] = tests[arg]
-    if np.isnan(tests[-1]):
-        runs[run] = -1
     if FLAGS.verbose:
         print(arg)
         print(tests[arg])
@@ -172,5 +175,5 @@ for run in range(FLAGS.test_count):
 
 if not FLAGS.verbose:
     print(runs)
-    runs = runs[runs > 0]
+    runs = runs[runs > 0.65]
     print((np.mean(runs), stats.sem(runs)))

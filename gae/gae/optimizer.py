@@ -74,36 +74,54 @@ class OptimizerSuper(object):
 
         self.accuracy = masked_accuracy(model.outputs, model.labels, model.labels_mask)
 
-class OptimizerSemi(object):
+class OptimizerSemiGen(object):
     def __init__(self, preds, labels, model, num_nodes, pos_weight, norm):
         preds_sub = preds
         labels_sub = labels
 
         self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
 
-        # y_semi = y_semi_supervised(tf.nn.softmax(model.y), model.labels, model.labels_mask)
-        # y_prior = y_prior_distribution(model.labels, model.labels_mask, model.output_dim)
+        y_semi = y_semi_supervised(tf.nn.softmax(model.y), model.labels, model.labels_mask)
+        y_prior = y_prior_distribution(model.labels, model.labels_mask, model.output_dim)
 
-        # self.cost += (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
+        self.cost += (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
 
-        # self.cost += (1.0 / num_nodes) * tf.reduce_mean(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q))
+        self.cost += (1.0 / num_nodes) * tf.reduce_mean(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q))
 
-        # for label in range(model.output_dim):
-        #     y_pos = tf.one_hot(indices = label, depth = model.output_dim)
-        #     y_pos = tf.ones_like(model.y) * y_pos
+        for label in range(model.output_dim):
+            y_pos = tf.one_hot(indices = label, depth = model.output_dim)
+            y_pos = tf.ones_like(model.y) * y_pos
 
-        #     z2_mean, z2_log_std = model.encoder_z2(model.z1q, y_pos)
-        #     z2 = model.sample(z2_mean, z2_log_std, FLAGS.dim_z2)
-        #     z1p_mean, z1p_log_std = model.decoder_z1(z2, y_pos)
+            z2_mean, z2_log_std = model.encoder_z2(model.z1q, y_pos)
+            z2 = model.sample(z2_mean, z2_log_std, FLAGS.dim_z2)
+            z1p_mean, z1p_log_std = model.decoder_z1(z2, y_pos)
 
-        #     self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * kl(z2_mean, z2_log_std))
-        #     self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * tf.maximum(log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q), -100))
+            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * kl(z2_mean, z2_log_std))
+            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * tf.maximum(log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q), -100))
+        
+        self.cost *= FLAGS.tau
+
+        self.cost += FLAGS.alpha * masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
+        self.cost += model.weight_norm
+
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
+        self.opt_op = self.optimizer.minimize(self.cost)
+        self.grads_vars = self.optimizer.compute_gradients(self.cost)
+
+        self.accuracy = masked_accuracy(model.outputs, model.labels, model.labels_mask)
+
+class OptimizerSemi(object):
+    def __init__(self, preds, labels, model, num_nodes, pos_weight, norm):
+        preds_sub = preds
+        labels_sub = labels
+
+        self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
         
         self.cost -= (1.0 / num_nodes) * tf.reduce_mean(kl(model.z1q_mean, model.z1q_log_std))
 
         self.cost *= FLAGS.tau
 
-        self.cost += FLAGS.alpha * masked_softmax_cross_entropy(model.y, model.labels, model.labels_mask)
+        self.cost += FLAGS.alpha * masked_softmax_cross_entropy(model.outputs, model.labels, model.labels_mask)
         self.cost += model.weight_norm
 
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
