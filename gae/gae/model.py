@@ -164,9 +164,10 @@ class GCNModelFeedback(Model):
         self.weight_norm += FLAGS.z1_decay * tf.nn.l2_loss(self.hidden_y_layer_z1.vars['weights'])
         self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.hidden_y_layer_graphite.vars['weights'])
 
-        self.y_layer = GraphConvolutionDense(input_dim=FLAGS.hidden_y,
+        self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
                                        output_dim=self.output_dim,
                                        act=lambda x: x,
+                                       adj=self.adj,
                                        dropout=self.dropout,
                                        logging=self.logging)
 
@@ -238,8 +239,8 @@ class GCNModelFeedback(Model):
         # hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1) + self.hidden_y_layer_graphite((inputs, graph))
         # return self.y_layer(hidden)
 
-        hidden = self.hidden_y_layer_graphite((inputs, graph))
-        return self.y_layer((hidden, graph))
+        hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_graphite((inputs, graph))
+        return self.y_layer(hidden)
 
     def encoder_z2(self, z1, y):
         prior_full = tf.concat((z1, y), axis = 1)
