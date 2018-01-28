@@ -261,10 +261,15 @@ class GCNModelFeedback(Model):
         self.z1q_mean, self.z1q_log_std = self.encoder_z1(self.inputs)
         self.z1q = self.sample(self.z1q_mean, self.z1q_log_std, FLAGS.dim_z1)
 
-        self.reconstructions, self.zf = self.decoder_x(self.z1q)
-        _, self.zf_noiseless = self.decoder_x(self.z1q_mean)
+        # self.reconstructions, self.zf = self.decoder_x(self.z1q)
+        # _, self.zf_noiseless = self.decoder_x(self.z1q_mean)
 
-        self.y = self.encoder_y(self.zf, self.inputs)
-        self.outputs = self.encoder_y(self.zf_noiseless, self.inputs)
+        # self.y = self.encoder_y(self.zf, self.inputs)
+        # self.outputs = self.encoder_y(self.zf_noiseless, self.inputs)
+
+        self.reconstructions, _ = self.decoder_x(self.z1q)
+
+        self.y = self.encoder_y(self.z1q, self.inputs)
+        self.outputs = self.encoder_y(self.z1q_mean, self.inputs)
 
 
