@@ -171,9 +171,11 @@ for run in range(FLAGS.test_count):
     runs[run] = tests[arg]
     if np.isnan(avg_cost):
         runs[run] = -1
-    if FLAGS.verbose:
+    if FLAGS.verbose or FLAGS.dataset == 'pubmed':
         print(arg)
         print(tests[arg])
+        sys.stdout.flush()
+    if FLAGS.verbose:    
         break
 
 if not FLAGS.verbose:
