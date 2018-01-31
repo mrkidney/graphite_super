@@ -126,6 +126,7 @@ for run in range(FLAGS.test_count):
     vals = np.zeros(FLAGS.epochs)
     tests = np.zeros(FLAGS.epochs)
 
+    avg_cost = 0
     # Train model
     for epoch in range(FLAGS.epochs):
 
@@ -168,6 +169,8 @@ for run in range(FLAGS.test_count):
     else:
         arg = FLAGS.epochs - 1
     runs[run] = tests[arg]
+    if np.isnan(avg_cost):
+        runs[run] = -1
     if FLAGS.verbose:
         print(arg)
         print(tests[arg])
@@ -175,5 +178,5 @@ for run in range(FLAGS.test_count):
 
 if not FLAGS.verbose:
     print(runs)
-    runs = runs[runs > 0.65]
+    runs = runs[runs > 0]
     print((np.mean(runs), stats.sem(runs)))
