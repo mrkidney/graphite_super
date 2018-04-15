@@ -139,13 +139,13 @@ class GCNModelFeedback(Model):
                                               output_dim=FLAGS.hidden_y,
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
-                                              act=tf.nn.relu,
+                                              act=lambda x: x,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
         self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
                                        output_dim=FLAGS.hidden_y,
-                                       act=tf.nn.relu,
+                                       act=lambda x: x,
                                        adj=self.adj,
                                        dropout=self.dropout,
                                        logging=self.logging)
@@ -209,13 +209,13 @@ class GCNModelFeedback(Model):
                                       output_dim=FLAGS.hidden_x,
                                       sparse_inputs = True,
                                       features_nonzero=self.features_nonzero,
-                                      act=tf.nn.relu,
+                                      act=lambda x: x,
                                       dropout=0.,
                                       logging=self.logging)
 
         self.hidden_x_z1_layer = GraphConvolutionDense(input_dim=FLAGS.dim_z1,
                                               output_dim=FLAGS.hidden_x,
-                                              act=tf.nn.relu,
+                                              act=lambda x: x,
                                               dropout=0.,
                                               logging=self.logging)
 
@@ -231,6 +231,7 @@ class GCNModelFeedback(Model):
 
     def encoder_y(self, z1, inputs):
         hidden = self.hidden_y_layer_x(inputs) + self.hidden_y_layer_z1(z1)
+        hidden = tf.nn.relu(hidden)
         return self.y_layer(hidden)
 
     def encoder_z2(self, z1, y):
@@ -247,6 +248,7 @@ class GCNModelFeedback(Model):
         graph = self.reconstruct_graph(z1)
 
         hidden = self.hidden_x_z1_layer((z1, graph)) + self.hidden_x_input_layer((self.inputs, graph))
+        hidden = tf.nn.relu(hidden)
         emb = self.x_layer((hidden, graph))
 
         emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb

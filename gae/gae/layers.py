@@ -146,6 +146,26 @@ class GraphConvolution(Layer):
         outputs = self.act(x)
         return outputs
 
+class GraphAttention(Layer):
+    def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu, **kwargs):
+        super(GraphAttention, self).__init__(**kwargs)
+        with tf.variable_scope(self.name + '_vars'):
+            self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
+            self.vars['a1'] = weight_variable_glorot(output_dim, 1, name="weights")
+            self.vars['a2'] = weight_variable_glorot(output_dim, 1, name="weights")
+        self.dropout = dropout
+        self.adj = adj
+        self.act = act
+
+    def _call(self, inputs):
+        x = inputs
+        x = tf.nn.dropout(x, 1-self.dropout)
+        x = tf.matmul(x, self.vars['weights'])
+
+        x = tf.sparse_tensor_dense_matmul(self.adj, x)
+        outputs = self.act(x)
+        return outputs
+
 class GraphConvolutionSparse(Layer):
     """Graph convolution layer for sparse inputs."""
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
