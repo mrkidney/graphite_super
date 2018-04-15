@@ -179,8 +179,8 @@ class GraphAttention(Layer):
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
         alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
-        alpha = tf.nn.softmax(alpha)
-        alpha_adj = tf.sparse_tensor_to_dense(self.adj, validate_indices = False) * alpha
+        alpha = tf.nn.softmax(tf.sparse_tensor_to_dense(self.adj, validate_indices = False) * alpha)
+        alpha_adj = alpha
 
         x = tf.matmul(alpha_adj, x)
         outputs = self.act(x)

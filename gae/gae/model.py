@@ -61,15 +61,23 @@ class GCNModel(Model):
         self.reconstructions = 0
         inputs = self.inputs
 
-        hidden = GraphConvolutionSparse(input_dim=self.input_dim,
-                                              output_dim=16,
+        # hidden = GraphConvolutionSparse(input_dim=self.input_dim,
+        #                                       output_dim=16,
+        #                                       adj=self.adj,
+        #                                       act=tf.nn.relu,
+        #                                       features_nonzero=self.features_nonzero,
+        #                                       dropout=self.dropout,
+        #                                       logging=self.logging)
+
+        hidden = FiveGraphAttention(input_dim=self.input_dim,
+                                              output_dim=FLAGS.hidden_y * 5,
                                               adj=self.adj,
                                               act=tf.nn.relu,
                                               features_nonzero=self.features_nonzero,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
-        output = GraphConvolution(input_dim=16,
+        output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
                                        act=lambda x: x,
