@@ -175,13 +175,13 @@ class GraphAttention(Layer):
     def _call(self, inputs):
         x = inputs
         x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
-        x = tf.matmul(x, self.vars['weights'])
+        x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
         alpha = a1 + tf.transpose(a2)
         alpha = tf.nn.softmax(alpha)
 
-        x = tf.sparse_tensor_dense_matmul(self.adj * alpha, x)
+        x = tf.matmul(tf.sparse_tensor_to_dense(self.adj) * alpha, x)
         outputs = self.act(x)
         return outputs
 
