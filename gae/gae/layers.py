@@ -150,6 +150,7 @@ class FiveGraphAttention(Layer):
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
         super(FiveGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
+            self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
             self.vars['l1'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
             self.vars['l2'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
             self.vars['l3'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
