@@ -150,14 +150,14 @@ class FiveGraphAttention(Layer):
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
         super(FiveGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
-            self.layers['l1'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.layers['l2'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.layers['l3'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.layers['l4'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.layers['l5'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
+            self.vars['l1'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
+            self.vars['l2'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
+            self.vars['l3'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
+            self.vars['l4'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
+            self.vars['l5'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
 
     def _call(self, inputs):
-        return tf.concat((self.layers['l1'](inputs), self.layers['l2'](inputs), self.layers['l3'](inputs), self.layers['l4'](inputs), self.layers['l5'](inputs)))
+        return tf.concat((self.vars['l1'](inputs), self.vars['l2'](inputs), self.vars['l3'](inputs), self.vars['l4'](inputs), self.vars['l5'](inputs)))
 
 class GraphAttention(Layer):
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
