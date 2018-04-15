@@ -146,8 +146,21 @@ class GraphConvolution(Layer):
         outputs = self.act(x)
         return outputs
 
+class FiveGraphAttention(Layer):
+    def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
+        super(FiveGraphAttention, self).__init__(**kwargs)
+        with tf.variable_scope(self.name + '_vars'):
+            self.layers['l1'] = GraphAttention(input_dim, output_dim/5.0, adj, features_nonzero, dropout, act)
+            self.layers['l2'] = GraphAttention(input_dim, output_dim/5.0, adj, features_nonzero, dropout, act)
+            self.layers['l3'] = GraphAttention(input_dim, output_dim/5.0, adj, features_nonzero, dropout, act)
+            self.layers['l4'] = GraphAttention(input_dim, output_dim/5.0, adj, features_nonzero, dropout, act)
+            self.layers['l5'] = GraphAttention(input_dim, output_dim/5.0, adj, features_nonzero, dropout, act)
+
+    def _call(self, inputs):
+        return tf.concat((self.layers['l1'](inputs), self.layers['l2'](inputs), self.layers['l3'](inputs), self.layers['l4'](inputs), self.layers['l5'](inputs)))
+
 class GraphAttention(Layer):
-    def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu, **kwargs):
+    def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
         super(GraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
@@ -156,13 +169,18 @@ class GraphAttention(Layer):
         self.dropout = dropout
         self.adj = adj
         self.act = act
+        self.features_nonzero = features_nonzero
 
     def _call(self, inputs):
         x = inputs
-        x = tf.nn.dropout(x, 1-self.dropout)
+        x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
         x = tf.matmul(x, self.vars['weights'])
+        a1 = tf.matmul(x, self.vars['a1'])
+        a2 = tf.matmul(x, self.vars['a2'])
+        alpha = a1 + tf.transpose(a2)
+        alpha = tf.nn.softmax(alpha)
 
-        x = tf.sparse_tensor_dense_matmul(self.adj, x)
+        x = tf.sparse_tensor_dense_matmul(self.adj * alpha, x)
         outputs = self.act(x)
         return outputs
 
