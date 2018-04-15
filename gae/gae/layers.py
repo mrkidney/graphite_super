@@ -181,7 +181,7 @@ class GraphAttention(Layer):
         alpha = a1 + tf.transpose(a2)
         alpha = tf.nn.softmax(alpha)
 
-        x = tf.matmul(tf.sparse_tensor_to_dense(self.adj) * alpha, x)
+        x = tf.matmul(tf.sparse_tensor_to_dense(self.adj, validate_indices = False) * alpha, x)
         outputs = self.act(x)
         return outputs
 
