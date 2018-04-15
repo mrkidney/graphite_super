@@ -158,7 +158,7 @@ class FiveGraphAttention(Layer):
             self.vars['l5'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
 
     def _call(self, inputs):
-        return tf.concat((self.vars['l1'](inputs), self.vars['l2'](inputs), self.vars['l3'](inputs), self.vars['l4'](inputs), self.vars['l5'](inputs)))
+        return tf.concat((self.vars['l1'](inputs), self.vars['l2'](inputs), self.vars['l3'](inputs), self.vars['l4'](inputs), self.vars['l5'](inputs)), 1)
 
 class GraphAttention(Layer):
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
