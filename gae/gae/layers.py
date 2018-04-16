@@ -148,7 +148,7 @@ class GraphConvolution(Layer):
 
 class MultiGraphAttention(Layer):
     def __init__(self, input_dim, output_dim, num_head, adj, features_nonzero, sparse=True, dropout=0., concat=True, act=tf.nn.relu, **kwargs):
-        super(FiveGraphAttention, self).__init__(**kwargs)
+        super(MultiGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             weight_list = []
             for i in range(num_head):
