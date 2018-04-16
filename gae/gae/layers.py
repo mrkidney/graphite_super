@@ -189,7 +189,7 @@ class GraphAttention(Layer):
             x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
             x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
         else:
-            x = tf.dropout(x, 1-self.dropout)
+            x = tf.nn.dropout(x, 1-self.dropout)
             x = tf.matmul(x, self.vars['weights'])
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
