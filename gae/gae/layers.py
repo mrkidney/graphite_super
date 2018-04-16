@@ -151,7 +151,7 @@ class MultiGraphAttention(Layer):
         super(MultiGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             weight_list = []
-            for i in range(num_head):
+            for i in range(self.num_head):
                 name = 'l' + str(i)
                 self.vars[name] = GraphAttention(input_dim, output_dim, adj, features_nonzero, sparse, dropout, act)
                 weight_list.append(self.vars[name].vars['weights'])
@@ -160,7 +160,7 @@ class MultiGraphAttention(Layer):
 
     def _call(self, inputs):
         output_list = []
-        for i in range(num_head):
+        for i in range(self.num_head):
             name = 'l' + str(i)
             output_list.append(self.vars[name](inputs))
 
