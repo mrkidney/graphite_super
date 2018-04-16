@@ -179,6 +179,7 @@ class GraphAttention(Layer):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
             self.vars['a1'] = weight_variable_glorot(output_dim, 1, name="weights")
             self.vars['a2'] = weight_variable_glorot(output_dim, 1, name="weights")
+            self.vars['bias'] = zeros([output_dim], name='bias')
         self.dropout = dropout
         self.adj = adj
         self.act = act
@@ -204,7 +205,8 @@ class GraphAttention(Layer):
         x = tf.nn.dropout(x, 1-self.dropout)
 
         x = tf.matmul(alpha, x)
-        x = tf.contrib.layers.bias_add(x, reuse=True)
+        x += self.vars['bias']
+        #x = tf.contrib.layers.bias_add(x, scope = reuse=True)
         outputs = self.act(x)
         return outputs
 
