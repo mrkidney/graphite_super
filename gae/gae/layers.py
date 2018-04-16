@@ -146,23 +146,31 @@ class GraphConvolution(Layer):
         outputs = self.act(x)
         return outputs
 
-class FiveGraphAttention(Layer):
-    def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
+class MultiGraphAttention(Layer):
+    def __init__(self, input_dim, output_dim, num_head, adj, features_nonzero, sparse=True, dropout=0., concat=True, act=tf.nn.relu, **kwargs):
         super(FiveGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
-            self.vars['l1'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.vars['l2'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.vars['l3'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.vars['l4'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            self.vars['l5'] = GraphAttention(input_dim, output_dim/5, adj, features_nonzero, dropout, act)
-            w = (self.vars['l1'].vars['weights'], self.vars['l2'].vars['weights'], self.vars['l3'].vars['weights'], self.vars['l4'].vars['weights'], self.vars['l5'].vars['weights'])
-            self.vars['weights'] = tf.concat(w, 1)
+            weight_list = []
+            for i in range(num_head):
+                name = 'l' + str(i)
+                self.vars[name] = GraphAttention(input_dim, output_dim, adj, features_nonzero, sparse, dropout, act)
+                weight_list.append(self.vars[name].vars['weights'])
+            self.vars['weights'] = tf.concat(weight_list, 1)
+        self.concat = concat
 
     def _call(self, inputs):
-        return tf.concat((self.vars['l1'](inputs), self.vars['l2'](inputs), self.vars['l3'](inputs), self.vars['l4'](inputs), self.vars['l5'](inputs)), 1)
+        output_list = []
+        for i in range(num_head):
+            name = 'l' + str(i)
+            output_list.append(self.vars[name](inputs))
+
+        if concat:
+            return tf.concat(output_list, 1)
+        else:
+            return tf.add_n(output_list) / len(output_list)
 
 class GraphAttention(Layer):
-    def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=tf.nn.relu, **kwargs):
+    def __init__(self, input_dim, output_dim, adj, features_nonzero, sparse=True, dropout=0., act=tf.nn.relu, **kwargs):
         super(GraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(input_dim, output_dim, name="weights")
@@ -172,11 +180,16 @@ class GraphAttention(Layer):
         self.adj = adj
         self.act = act
         self.features_nonzero = features_nonzero
+        self.sparse = sparse
 
     def _call(self, inputs):
         x = inputs
-        x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
-        x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
+        if self.sparse:
+            x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
+            x = tf.sparse_tensor_dense_matmul(x, self.vars['weights'])
+        else:
+            x = tf.dropout(x, 1-self.dropout)
+            x = tf.matmul(x, self.vars['weights'])
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
         alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))

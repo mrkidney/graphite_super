@@ -69,17 +69,28 @@ class GCNModel(Model):
         #                                       dropout=self.dropout,
         #                                       logging=self.logging)
 
-        hidden = FiveGraphAttention(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden_y * 5,
+        # output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
+        #                                output_dim=self.output_dim,
+        #                                adj=self.adj,
+        #                                act=lambda x: x,
+        #                                dropout=self.dropout,
+        #                                logging=self.logging)
+
+        hidden = MultiGraphAttention(input_dim=self.input_dim,
+                                              output_dim=FLAGS.hidden_y,
                                               adj=self.adj,
                                               act=tf.nn.elu,
                                               features_nonzero=self.features_nonzero,
+                                              num_head = 8,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
-        output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
+        output = MultiGraphAttention(input_dim=FLAGS.hidden_y * 8,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
+                                       sparse=False,
+                                       features_nonzero=self.features_nonzero,
+                                       num_head = 1,
                                        act=lambda x: x,
                                        dropout=self.dropout,
                                        logging=self.logging)
