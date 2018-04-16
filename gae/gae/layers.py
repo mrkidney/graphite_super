@@ -204,6 +204,7 @@ class GraphAttention(Layer):
         x = tf.nn.dropout(x, 1-self.dropout)
 
         x = tf.matmul(alpha, x)
+        x = tf.contrib.layers.bias_add(x)
         outputs = self.act(x)
         return outputs
 
