@@ -196,7 +196,7 @@ class GCNModelFeedback(Model):
                                               dropout=self.dropout,
                                               logging=self.logging)
 
-        self.y_layer = MultiGraphAttention(input_dim=FLAGS.hidden_y * 8,
+        self.y_layer = MultiGraphAttention(input_dim=2 * FLAGS.hidden_y * FLAGS.num_head,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
                                        sparse=False,
