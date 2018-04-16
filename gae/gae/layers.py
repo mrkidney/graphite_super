@@ -155,7 +155,9 @@ class MultiGraphAttention(Layer):
                 name = 'l' + str(i)
                 self.vars[name] = GraphAttention(input_dim, output_dim, adj, features_nonzero, sparse, dropout, act)
                 weight_list.append(self.vars[name].vars['weights'])
-            self.vars['weights'] = tf.concat(weight_list, 1)
+                weight_list.append(self.vars[name].vars['a1'])
+                weight_list.append(self.vars[name].vars['a2'])
+            self.vars['weights'] = tf.concat(tf.reshape(weight_list, -1), 0)
         self.concat = concat
         self.num_head = num_head
 
