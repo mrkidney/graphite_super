@@ -180,10 +180,11 @@ class GraphAttention(Layer):
         a2 = tf.matmul(x, self.vars['a2'])
         alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
         adj = tf.sparse_tensor_to_dense(self.adj, validate_indices = False)
-        alpha = tf.nn.softmax(adj * alpha)
-        alpha_adj = tf.nn.dropout(alpha * adj, 1 - self.dropout)
+        alpha = tf.nn.softmax(alpha + adj)
+        alpha = tf.nn.dropout(alpha, 1 - self.dropout)
+        
 
-        x = tf.matmul(alpha_adj, x)
+        x = tf.matmul(alpha, x)
         outputs = self.act(x)
         return outputs
 
