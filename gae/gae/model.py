@@ -72,7 +72,7 @@ class GCNModel(Model):
         hidden = FiveGraphAttention(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden_y * 5,
                                               adj=self.adj,
-                                              act=tf.nn.relu,
+                                              act=tf.nn.elu,
                                               features_nonzero=self.features_nonzero,
                                               dropout=self.dropout,
                                               logging=self.logging)
