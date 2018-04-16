@@ -199,8 +199,9 @@ class GraphAttention(Layer):
         adj = tf.sparse_tensor_to_dense(self.adj, validate_indices = False)
         bias = -1e9 * (1.0 - tf.ceil(adj))
         alpha = tf.nn.softmax(alpha + bias)
-        alpha = tf.nn.dropout(alpha, 1 - self.dropout / 0.6 * 0.5)
-        
+
+        alpha = tf.nn.dropout(alpha, 1 - self.dropout)
+        x = tf.nn.dropout(x, 1-self.dropout)
 
         x = tf.matmul(alpha, x)
         outputs = self.act(x)
