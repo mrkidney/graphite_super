@@ -150,14 +150,14 @@ class MultiGraphAttention(Layer):
     def __init__(self, input_dim, output_dim, num_head, adj, features_nonzero, sparse=True, dropout=0., concat=True, act=tf.nn.relu, **kwargs):
         super(MultiGraphAttention, self).__init__(**kwargs)
         with tf.variable_scope(self.name + '_vars'):
-            weight_list = []
+            weight_l2 = 0.
             for i in range(num_head):
                 name = 'l' + str(i)
                 self.vars[name] = GraphAttention(input_dim, output_dim, adj, features_nonzero, sparse, dropout, act)
-                weight_list.append(self.vars[name].vars['weights'])
-                weight_list.append(self.vars[name].vars['a1'])
-                weight_list.append(self.vars[name].vars['a2'])
-            self.vars['weights'] = tf.concat(tf.reshape(weight_list, -1), 0)
+                weight_l2 += tf.nn.l2_loss(self.vars[name].vars['weights'])
+                weight_l2 += tf.nn.l2_loss(self.vars[name].vars['a1'])
+                weight_l2 += tf.nn.l2_loss(self.vars[name].vars['a2'])
+            self.vars['weight_l2'] = weight_l2
         self.concat = concat
         self.num_head = num_head
 
