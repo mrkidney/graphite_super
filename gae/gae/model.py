@@ -154,7 +154,7 @@ class GCNModelFeedback(Model):
                                           dropout=0.,
                                           logging=self.logging)
 
-        self.hidden_y_layer_x = FiveGraphAttention(input_dim=self.input_dim,
+        self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
                                               output_dim=FLAGS.hidden_y,
                                               adj=self.adj,
                                               features_nonzero=self.features_nonzero,
