@@ -165,7 +165,7 @@ class MultiGraphAttention(Layer):
             name = 'l' + str(i)
             output_list.append(self.vars[name](inputs))
 
-        if concat:
+        if self.concat:
             return tf.concat(output_list, 1)
         else:
             return tf.add_n(output_list) / len(output_list)
