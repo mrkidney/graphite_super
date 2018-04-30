@@ -124,7 +124,10 @@ class GCNModelFeedback(Model):
         embT = tf.transpose(emb)
         graph = tf.matmul(emb, embT)
         if normalize:
-          graph = tf.nn.sigmoid(graph)
+          norm_emb = tf.nn.l2_normalize(emb)
+          norm_embT = tf.transpose(norm_emb)
+          graph = tf.matmul(norm_emb, norm_embT)
+          graph += tf.ones_like(graph)
           d = tf.reduce_sum(graph, 1)
           d = tf.pow(d, -0.5)
           d = tf.stop_gradient(d)
