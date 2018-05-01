@@ -199,7 +199,7 @@ class GraphAttention(Layer):
         alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
         adj = tf.sparse_tensor_to_dense(self.adj, validate_indices = False)
         #bias = -1e9 * (1.0 - tf.ceil(adj))
-        bias = tf.exp(self.adj * -10e9) * -10e9
+        bias = tf.exp(tf.ceil(adj) * -10e9) * -10e9
         alpha = tf.nn.softmax(alpha + bias)
 
         alpha = tf.nn.dropout(alpha, 1 - self.dropout)
