@@ -202,7 +202,7 @@ class GraphAttention(Layer):
         bias = tf.exp(tf.ceil(adj) * -10e9) * -10e9
         alpha = tf.nn.softmax(alpha + bias)
 
-        alpha = tf.nn.dropout(alpha, 1 - self.dropout)
+        alpha = tf.nn.dropout(alpha, 1 - self.dropout / 0.6 * 0.5)
         #x = tf.nn.dropout(x, 1-self.dropout)
 
         x = tf.matmul(alpha, x)
