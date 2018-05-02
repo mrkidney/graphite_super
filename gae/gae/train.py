@@ -61,6 +61,15 @@ if FLAGS.seeded:
     np.random.seed(123)
     tf.set_random_seed(123)
 
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+if FLAGS.gpu == -1:
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''
+    sess = tf.Session()
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
+    gpu_options = tf.GPUOptions(allow_growth=True)
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
+
 runs = np.zeros(FLAGS.test_count)
 for run in range(FLAGS.test_count):
 
@@ -114,14 +123,6 @@ for run in range(FLAGS.test_count):
         else:
             opt = OptimizerSuper(model = model)
 
-    os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-    if FLAGS.gpu == -1:
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
-        sess = tf.Session()
-    else:
-        os.environ['CUDA_VISIBLE_DEVICES'] = str(FLAGS.gpu) # Or whichever device you would like to use
-        gpu_options = tf.GPUOptions(allow_growth=True)
-        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True))
     sess.run(tf.global_variables_initializer())
 
     vals = np.zeros(FLAGS.epochs)
