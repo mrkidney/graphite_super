@@ -290,11 +290,19 @@ class GCNModelFeedback(Model):
         return self.z1p_mean_layer(hidden), self.z1p_log_std_layer(hidden)
 
     def decoder_x(self, z1):
-        graph = self.reconstruct_graph(z1)
+        # graph = self.reconstruct_graph(z1)
+        recon_1 = tf.nn.l2_normalize(z1, dim = 1)
+        recon_2 = tf.ones_like(recon_1)
+        recon_2 /= tf.sqrt(tf.reduce_sum(recon_2, axis = 1, keepdims = True))
 
-        hidden = self.hidden_x_z1_layer((z1, graph)) + self.hidden_x_input_layer((self.inputs, graph))
+        d = tf.matmul(recon_1, tf.expand_dims(tf.reduce_sum(recon_1, axis = 0), 1)) + tf.matmul(recon_2, tf.expand_dims(tf.reduce_sum(recon_2, axis = 0), 1))
+        d = tf.pow(d, -0.5)
+        recon_1 *= d
+        recon_2 *= d
+
+        hidden = self.hidden_x_z1_layer((z1, recon_1, recon_2)) + self.hidden_x_input_layer((self.inputs, recon_1, recon_2))
         hidden = tf.nn.relu(hidden)
-        emb = self.x_layer((hidden, graph))
+        emb = self.x_layer((hidden, recon_1, recon_2))
 
         emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
 
