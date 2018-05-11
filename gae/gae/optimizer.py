@@ -79,7 +79,19 @@ class OptimizerSemiGen(object):
         preds_sub = preds
         labels_sub = labels
 
-        self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
+        ###
+        indices = labels.indices
+        no_edge_indices = tf.random_uniform(indices.shape, maxval = num_nodes, dtype=tf.int32)
+        indices = tf.concat((indices, no_edge_indices))
+
+        preds_vals = tf.reduce_sum(tf.gather(preds, indices[0]) * tf.gather(preds, indices[1]), axis = 1)
+        labels_vals = labels[indices]
+
+        self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=1))
+
+        ###
+
+        #self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
 
         y_semi = y_semi_supervised(tf.nn.softmax(model.y), model.labels, model.labels_mask)
         y_prior = y_prior_distribution(model.labels, model.labels_mask, model.output_dim)

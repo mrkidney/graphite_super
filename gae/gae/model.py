@@ -306,9 +306,10 @@ class GCNModelFeedback(Model):
 
         emb = (1 - FLAGS.autoregressive_scalar) * z1 + FLAGS.autoregressive_scalar * emb
 
-        reconstructions = self.reconstruct_graph(emb, normalize = False)
+        #reconstructions = self.reconstruct_graph(emb, normalize = False)
+        #return tf.reshape(reconstructions, [-1]), emb
 
-        return tf.reshape(reconstructions, [-1]), emb
+        return emb, emb
 
     def _build(self):
         self.define_layers()
