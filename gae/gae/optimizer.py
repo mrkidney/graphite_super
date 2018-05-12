@@ -89,7 +89,7 @@ class OptimizerSemiGen(object):
         all_indices = tf.concat((indices, no_edge_tensor.indices), axis = 0)
 
         preds_vals = tf.reduce_sum(tf.gather(preds, all_indices[:,0]) * tf.gather(preds, all_indices[:,1]), axis = 1)
-        labels_vals = tf.concat((tf.ones_like(indices[:,0]), tf.zeros_like(no_edge_indices[:,0])), axis = 0)
+        labels_vals = tf.concat((labels.values, no_edge_tensor.values), axis = 0)
 
         self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_vals, targets=labels_vals, pos_weight=1))
 
