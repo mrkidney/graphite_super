@@ -63,14 +63,14 @@ class GCNModel(Model):
 
         if not FLAGS.attention:
           hidden = GraphConvolutionSparse(input_dim=self.input_dim,
-                                                output_dim=16,
+                                                output_dim=FLAGS.hidden_y,
                                                 adj=self.adj,
                                                 act=tf.nn.relu,
                                                 features_nonzero=self.features_nonzero,
                                                 dropout=self.dropout,
                                                 logging=self.logging)
 
-          output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
+          output = GraphConvolution(input_dim=FLAGS.hidden_y,
                                          output_dim=self.output_dim,
                                          adj=self.adj,
                                          act=lambda x: x,
