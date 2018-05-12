@@ -81,11 +81,11 @@ class GCNModel(Model):
                                               adj=self.adj,
                                               act=tf.nn.elu,
                                               features_nonzero=self.features_nonzero,
-                                              num_head = 8,
+                                              num_head = FLAGS.num_head,
                                               dropout=self.dropout,
                                               logging=self.logging)
 
-        output = MultiGraphAttention(input_dim=FLAGS.hidden_y * 8,
+        output = MultiGraphAttention(input_dim=FLAGS.hidden_y * FLAGS.num_head,
                                        output_dim=self.output_dim,
                                        adj=self.adj,
                                        sparse=False,

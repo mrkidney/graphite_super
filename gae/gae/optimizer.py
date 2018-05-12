@@ -81,8 +81,8 @@ class OptimizerSemiGen(object):
 
         ###
         indices = labels.indices
-        no_edge_indices = tf.random_uniform(indices.shape, maxval = num_nodes, dtype=tf.int32)
-        indices = tf.concat((indices, no_edge_indices))
+        no_edge_indices = tf.random_uniform(tf.shape(indices), maxval = num_nodes, dtype=tf.int64)
+        indices = tf.concat((indices, no_edge_indices), axis = 0)
 
         preds_vals = tf.reduce_sum(tf.gather(preds, indices[0]) * tf.gather(preds, indices[1]), axis = 1)
         labels_vals = labels[indices]
