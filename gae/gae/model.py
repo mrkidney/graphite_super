@@ -61,44 +61,44 @@ class GCNModel(Model):
         self.reconstructions = 0
         inputs = self.inputs
 
-        # hidden = GraphConvolutionSparse(input_dim=self.input_dim,
-        #                                       output_dim=16,
-        #                                       adj=self.adj,
-        #                                       act=tf.nn.relu,
-        #                                       features_nonzero=self.features_nonzero,
-        #                                       dropout=self.dropout,
-        #                                       logging=self.logging)
+        if not FLAGS.attention:
+          hidden = GraphConvolutionSparse(input_dim=self.input_dim,
+                                                output_dim=16,
+                                                adj=self.adj,
+                                                act=tf.nn.relu,
+                                                features_nonzero=self.features_nonzero,
+                                                dropout=self.dropout,
+                                                logging=self.logging)
 
-        # output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
-        #                                output_dim=self.output_dim,
-        #                                adj=self.adj,
-        #                                act=lambda x: x,
-        #                                dropout=self.dropout,
-        #                                logging=self.logging)
+          output = GraphConvolution(input_dim=FLAGS.hidden_y * 5,
+                                         output_dim=self.output_dim,
+                                         adj=self.adj,
+                                         act=lambda x: x,
+                                         dropout=self.dropout,
+                                         logging=self.logging)
+          self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden.vars['weights'])
+        else:
+          hidden = MultiGraphAttention(input_dim=self.input_dim,
+                                                output_dim=FLAGS.hidden_y,
+                                                adj=self.adj,
+                                                act=tf.nn.elu,
+                                                features_nonzero=self.features_nonzero,
+                                                num_head = FLAGS.num_head,
+                                                dropout=self.dropout,
+                                                logging=self.logging)
 
-        hidden = MultiGraphAttention(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden_y,
-                                              adj=self.adj,
-                                              act=tf.nn.elu,
-                                              features_nonzero=self.features_nonzero,
-                                              num_head = FLAGS.num_head,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
-
-        output = MultiGraphAttention(input_dim=FLAGS.hidden_y * FLAGS.num_head,
-                                       output_dim=self.output_dim,
-                                       adj=self.adj,
-                                       sparse=False,
-                                       features_nonzero=self.features_nonzero,
-                                       num_head = 1,
-                                       act=lambda x: x,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
+          output = MultiGraphAttention(input_dim=FLAGS.hidden_y * FLAGS.num_head,
+                                         output_dim=self.output_dim,
+                                         adj=self.adj,
+                                         sparse=False,
+                                         features_nonzero=self.features_nonzero,
+                                         num_head = 1,
+                                         act=lambda x: x,
+                                         dropout=self.dropout,
+                                         logging=self.logging)
+          self.weight_norm = FLAGS.weight_decay * hidden.vars['weight_l2']
 
         self.outputs = output(hidden(inputs))
-
-        # self.weight_norm = FLAGS.weight_decay * tf.nn.l2_loss(hidden.vars['weights'])
-        self.weight_norm = FLAGS.weight_decay * hidden.vars['weight_l2']
 
 class GCNModelFeedback(Model):
     def __init__(self, placeholders, num_features, num_nodes, features_nonzero, **kwargs):
@@ -158,62 +158,61 @@ class GCNModelFeedback(Model):
                                           dropout=0.,
                                           logging=self.logging)
 
-        # self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
-        #                                       output_dim=FLAGS.hidden_y,
-        #                                       adj=self.adj,
-        #                                       features_nonzero=self.features_nonzero,
-        #                                       act=lambda x: x,
-        #                                       dropout=self.dropout,
-        #                                       logging=self.logging)
+        if not FLAGS.attention:
+          self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
+                                                output_dim=FLAGS.hidden_y,
+                                                adj=self.adj,
+                                                features_nonzero=self.features_nonzero,
+                                                act=lambda x: x,
+                                                dropout=self.dropout,
+                                                logging=self.logging)
 
-        # self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
-        #                                output_dim=FLAGS.hidden_y,
-        #                                act=lambda x: x,
-        #                                adj=self.adj,
-        #                                dropout=self.dropout,
-        #                                logging=self.logging)
+          self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
+                                         output_dim=FLAGS.hidden_y,
+                                         act=lambda x: x,
+                                         adj=self.adj,
+                                         dropout=self.dropout,
+                                         logging=self.logging)
 
-        # self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
-        #                                output_dim=self.output_dim,
-        #                                act=lambda x: x,
-        #                                adj=self.adj,
-        #                                dropout=self.dropout,
-        #                                logging=self.logging)
+          self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
+                                         output_dim=self.output_dim,
+                                         act=lambda x: x,
+                                         adj=self.adj,
+                                         dropout=self.dropout,
+                                         logging=self.logging)
+          self.weight_norm += FLAGS.weight_decay * tf.nn.l2_loss(self.hidden_y_layer_x.vars['weights'])
+          self.weight_norm += FLAGS.z1_decay * tf.nn.l2_loss(self.hidden_y_layer_z1.vars['weights'])
+        else:
+          self.hidden_y_layer_x = MultiGraphAttention(input_dim=self.input_dim,
+                                                output_dim=FLAGS.hidden_y,
+                                                adj=self.adj,
+                                                act=tf.nn.elu,
+                                                features_nonzero=self.features_nonzero,
+                                                num_head = FLAGS.num_head,
+                                                dropout=self.dropout,
+                                                logging=self.logging)
 
-        self.hidden_y_layer_x = MultiGraphAttention(input_dim=self.input_dim,
-                                              output_dim=FLAGS.hidden_y,
-                                              adj=self.adj,
-                                              act=tf.nn.elu,
-                                              features_nonzero=self.features_nonzero,
-                                              num_head = FLAGS.num_head,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
+          self.hidden_y_layer_z1 = MultiGraphAttention(input_dim=FLAGS.dim_z1,
+                                                output_dim=FLAGS.hidden_y,
+                                                adj=self.adj,
+                                                act=tf.nn.elu,
+                                                sparse=False,
+                                                features_nonzero=self.features_nonzero,
+                                                num_head = 1,
+                                                dropout=self.dropout,
+                                                logging=self.logging)
 
-        self.hidden_y_layer_z1 = MultiGraphAttention(input_dim=FLAGS.dim_z1,
-                                              output_dim=FLAGS.hidden_y,
-                                              adj=self.adj,
-                                              act=tf.nn.elu,
-                                              sparse=False,
-                                              features_nonzero=self.features_nonzero,
-                                              num_head = 1,
-                                              dropout=self.dropout,
-                                              logging=self.logging)
-
-        self.y_layer = MultiGraphAttention(input_dim=FLAGS.hidden_y * (FLAGS.num_head+1),
-                                       output_dim=self.output_dim,
-                                       adj=self.adj,
-                                       sparse=False,
-                                       features_nonzero=self.features_nonzero,
-                                       num_head = 1,
-                                       act=lambda x: x,
-                                       dropout=self.dropout,
-                                       logging=self.logging)
-
-        #self.weight_norm += FLAGS.weight_decay * tf.nn.l2_loss(self.hidden_y_layer_x.vars['weights'])
-        #self.weight_norm += FLAGS.z1_decay * tf.nn.l2_loss(self.hidden_y_layer_z1.vars['weights'])
-        self.weight_norm += FLAGS.weight_decay * self.hidden_y_layer_x.vars['weight_l2']
-        self.weight_norm += FLAGS.z1_decay * self.hidden_y_layer_z1.vars['weight_l2']
-        # self.weight_norm += FLAGS.graphite_decay * tf.nn.l2_loss(self.hidden_y_layer_graphite.vars['weights'])
+          self.y_layer = MultiGraphAttention(input_dim=FLAGS.hidden_y * (FLAGS.num_head+1),
+                                         output_dim=self.output_dim,
+                                         adj=self.adj,
+                                         sparse=False,
+                                         features_nonzero=self.features_nonzero,
+                                         num_head = 1,
+                                         act=lambda x: x,
+                                         dropout=self.dropout,
+                                         logging=self.logging)
+          self.weight_norm += FLAGS.weight_decay * self.hidden_y_layer_x.vars['weight_l2']
+          self.weight_norm += FLAGS.z1_decay * self.hidden_y_layer_z1.vars['weight_l2']
 
         self.hidden_z2_layer = Dense(input_dim=FLAGS.dim_z1 + self.output_dim,
                                        output_dim=FLAGS.hidden_z2,
