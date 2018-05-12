@@ -83,7 +83,7 @@ class OptimizerSemiGen(object):
         indices = labels.indices
         no_edge_indices = tf.random_uniform(tf.shape(indices), maxval = num_nodes, dtype=tf.int64)
         no_edge_tensor = tf.SparseTensor(no_edge_indices, labels.values, labels.dense_shape)
-        no_edge_tensor = no_edge_tensor * labels_sub
+        no_edge_tensor = tf.sparse_minimum(no_edge_tensor, labels_sub)
         no_edge_indices = no_edge_tensor.indices
         
         all_indices = tf.concat((indices, no_edge_tensor.indices), axis = 0)
