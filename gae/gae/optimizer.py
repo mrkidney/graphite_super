@@ -82,12 +82,16 @@ class OptimizerSemiGen(object):
         ###
         indices = labels.indices
         no_edge_indices = tf.random_uniform(tf.shape(indices), maxval = num_nodes, dtype=tf.int64)
-        indices = tf.concat((indices, no_edge_indices), axis = 0)
+        no_edge_tensor = tf.SparseTensor(no_edge_indices, labels.values, labels.dense_shape)
+        no_edge_tensor = no_edge_tensor * labels_sub
+        no_edge_indices = no_edge_tensor.indices
+        
+        all_indices = tf.concat((indices, no_edge_tensor.indices), axis = 0)
 
-        preds_vals = tf.reduce_sum(tf.gather(preds, indices[0]) * tf.gather(preds, indices[1]), axis = 1)
-        labels_vals = labels[indices]
+        preds_vals = tf.reduce_sum(tf.gather(preds, all_indices[:,0]) * tf.gather(preds, all_indices[:,1]), axis = 1)
+        labels_vals = tf.concat((tf.ones_like(indices), tf.zeros_like(no_edge_indices), axis = 0)
 
-        self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=1))
+        self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_vals, targets=labels_vals, pos_weight=1))
 
         ###
 
