@@ -174,7 +174,7 @@ class GCNModelFeedback(Model):
                                          dropout=self.dropout,
                                          logging=self.logging)
 
-          self.y_layer = GraphConvolution(input_dim=FLAGS.hidden_y,
+          self.y_layer = GraphConvolution(input_dim=2 * FLAGS.hidden_y,
                                          output_dim=self.output_dim,
                                          act=lambda x: x,
                                          adj=self.adj,

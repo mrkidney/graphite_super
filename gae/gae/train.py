@@ -54,7 +54,7 @@ flags.DEFINE_string('model', 'graphite', 'Model string.')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
 flags.DEFINE_integer('seeded', 0, 'Set numpy random seed')
 
-flags.DEFINE_integer('attention', 1, 'attention model')
+flags.DEFINE_integer('attention', 0, 'attention model')
 
 dataset_str = FLAGS.dataset
 model_str = FLAGS.model
