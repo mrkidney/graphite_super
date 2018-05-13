@@ -203,7 +203,7 @@ class GraphAttention(Layer):
         alpha = tf.SparseTensor(alpha.indices, tf.nn.leaky_relu(alpha.values), alpha.dense_shape)
         alpha = tf.sparse_softmax(alpha)
 
-        alpha = dropout_sparse(alpha, 1-self.dropout, tf.reduce_sum_sparse(adj))
+        alpha = dropout_sparse(alpha, 1-self.dropout, tf.sparse_reduce_sum(adj))
         x = tf.sparse_tensor_dense_matmul(alpha, x)
 
         # alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
