@@ -197,15 +197,25 @@ class GraphAttention(Layer):
             x = tf.matmul(x, self.vars['weights'])
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
-        alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
-        adj = tf.ceil(tf.sparse_tensor_to_dense(self.adj, validate_indices = False))
-        bias = tf.exp(adj * -10e9) * -10e9
-        alpha = tf.nn.softmax(alpha + bias)
 
-        alpha = tf.nn.dropout(alpha, 1 - self.dropout)
-        x = tf.nn.dropout(x, 1-self.dropout)
+        adj = tf.SparseTensor(self.adj.indices, tf.ones_like(self.adj.values), self.adj.dense_shape)
+        alpha = tf.sparse_add(a1 * adj, adj * tf.transpose(a2))
+        alpha = tf.SparseTensor(alpha.indices, tf.nn.leaky_relu(alpha.values), alpha.dense_shape)
+        alpha = tf.sparse_softmax(alpha)
 
-        x = tf.matmul(alpha, x)
+        alpha = dropout_sparse(alpha, 1-self.dropout, tf.reduce_sum_sparse(adj))
+        x = tf.sparse_tensor_dense_matmul(alpha, x)
+
+        # alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
+        # adj = tf.ceil(tf.sparse_tensor_to_dense(self.adj, validate_indices = False))
+        # bias = tf.exp(adj * -10e9) * -10e9
+        # alpha = tf.nn.softmax(alpha + bias)
+
+        # alpha = tf.nn.dropout(alpha, 1 - self.dropout)
+        # x = tf.nn.dropout(x, 1-self.dropout)
+
+        # x = tf.matmul(alpha, x)
+
         x += self.vars['bias']
         #x = tf.contrib.layers.bias_add(x, scope = reuse=True)
         outputs = self.act(x)
