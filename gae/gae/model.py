@@ -163,13 +163,13 @@ class GCNModelFeedback(Model):
                                                 output_dim=FLAGS.hidden_y,
                                                 adj=self.adj,
                                                 features_nonzero=self.features_nonzero,
-                                                act=lambda x: x,
+                                                act=tf.nn.relu,
                                                 dropout=self.dropout,
                                                 logging=self.logging)
 
           self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
                                          output_dim=FLAGS.hidden_y,
-                                         act=lambda x: x,
+                                         act=tf.nn.relu,
                                          adj=self.adj,
                                          dropout=self.dropout,
                                          logging=self.logging)
