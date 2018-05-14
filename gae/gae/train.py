@@ -49,6 +49,8 @@ flags.DEFINE_integer('verbose', 1, 'verboseness')
 flags.DEFINE_integer('pick_best', 1, 'choose arg based on val')
 flags.DEFINE_integer('test_count', 100, 'batch of tests')
 
+flags.DEFINE_integer('subsample', 0, 'sub')
+
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'graphite', 'Model string.')
 flags.DEFINE_integer('gpu', -1, 'Which gpu to use')
