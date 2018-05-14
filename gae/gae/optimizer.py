@@ -92,6 +92,8 @@ class OptimizerSemiGen(object):
 
             self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_vals, targets=labels_vals, pos_weight=1))
         else:
+            preds_sub = tf.matmul(preds_sub, tf.transpose(preds_sub))
+            labels_sub = tf.sparse_tensor_to_dense(labels_sub, validate_indices = False)
             self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
 
         y_semi = y_semi_supervised(tf.nn.softmax(model.y), model.labels, model.labels_mask)
@@ -141,6 +143,8 @@ class OptimizerSemi(object):
 
             self.cost = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_vals, targets=labels_vals, pos_weight=1))
         else:
+            preds_sub = tf.matmul(preds_sub, tf.transpose(preds_sub))
+            labels_sub = tf.sparse_tensor_to_dense(labels_sub, validate_indices = False)
             self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
         
         self.cost -= (1.0 / num_nodes) * tf.reduce_mean(kl(model.z1q_mean, model.z1q_log_std))
