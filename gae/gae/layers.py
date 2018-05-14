@@ -198,24 +198,21 @@ class GraphAttention(Layer):
         a1 = tf.matmul(x, self.vars['a1'])
         a2 = tf.matmul(x, self.vars['a2'])
 
-        a1 = tf.squeeze(a1)
-        a2 = tf.squeeze(a2)
-
-        adj = tf.SparseTensor(self.adj.indices, tf.ones_like(self.adj.values), self.adj.dense_shape)
-        # alpha1 = tf.SparseTensor(self.adj.indices, tf.gather(a1, self.adj.indices[:,0]), self.adj.dense_shape)
-        # alpha2 = tf.SparseTensor(self.adj.indices, tf.gather(a2, self.adj.indices[:,1]), self.adj.dense_shape)
-        values = tf.gather(a1, self.adj.indices[:,0]) + tf.gather(a2, self.adj.indices[:,1])
-        alpha = tf.SparseTensor(self.adj.indices, tf.nn.leaky_relu(values), self.adj.dense_shape)
-
-        #alpha = tf.sparse_add(adj * a1, adj * tf.transpose(a2))
+        ######################
+        adj = tf.SparseTensor(self.adj.indices, tf.ceil(self.adj.values), self.adj.dense_shape)
+        alpha = tf.sparse_add(adj * a1, adj * tf.transpose(a2), thresh = 0.001)
         
         alpha = tf.SparseTensor(alpha.indices, tf.nn.leaky_relu(alpha.values), alpha.dense_shape)
+        alpha = tf.sparse_reorder(alpha)
         alpha = tf.sparse_softmax(alpha)
 
-        #alpha = dropout_sparse(alpha, 1-self.dropout, tf.cast(tf.reduce_sum(adj.values), tf.int32))
+        alpha = tf.SparseTensor(alpha.indices, tf.nn.dropout(alpha.values, 1-self.dropout), alpha.dense_shape)
+        x = tf.nn.dropout(x, 1-self.dropout)
         x = tf.sparse_tensor_dense_matmul(alpha, x)
+        ########################
 
         # alpha = tf.nn.leaky_relu(a1 + tf.transpose(a2))
+        # alpha = tf.sparse_tensor_to_dense(alpha, validate_indices = False)
         # adj = tf.ceil(tf.sparse_tensor_to_dense(self.adj, validate_indices = False))
         # bias = tf.exp(adj * -10e9) * -10e9
         # alpha = tf.nn.softmax(alpha + bias)
