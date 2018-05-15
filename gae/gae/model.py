@@ -159,17 +159,20 @@ class GCNModelFeedback(Model):
                                           logging=self.logging)
 
         if not FLAGS.attention:
+          activation = tf.nn.relu
+          if FLAGS.mute_relu:
+            activation = tf.identity
           self.hidden_y_layer_x = GraphConvolutionSparse(input_dim=self.input_dim,
                                                 output_dim=FLAGS.hidden_y,
                                                 adj=self.adj,
                                                 features_nonzero=self.features_nonzero,
-                                                act=tf.nn.relu,
+                                                act=activation,
                                                 dropout=self.dropout,
                                                 logging=self.logging)
 
           self.hidden_y_layer_z1 = GraphConvolution(input_dim=FLAGS.dim_z1,
                                          output_dim=FLAGS.hidden_y,
-                                         act=tf.nn.relu,
+                                         act=activation,
                                          adj=self.adj,
                                          dropout=self.dropout,
                                          logging=self.logging)
