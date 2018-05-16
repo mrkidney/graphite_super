@@ -293,7 +293,7 @@ class GCNModelFeedback(Model):
 
     def decoder_x(self, z1):
         # graph = self.reconstruct_graph(z1)
-        recon_1 = tf.nn.l2_normalize(z1, dim = 1)
+        recon_1 = tf.nn.l2_normalize(z1, axis = 1)
         recon_2 = tf.ones_like(recon_1)
         recon_2 /= tf.sqrt(tf.reduce_sum(recon_2, axis = 1, keepdims = True))
 

@@ -6,7 +6,7 @@ FLAGS = flags.FLAGS
 
 def masked_softmax_cross_entropy(preds, labels, mask):
     """Softmax cross-entropy loss with masking."""
-    loss = tf.nn.softmax_cross_entropy_with_logits(logits=preds, labels=labels)
+    loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=preds, labels=labels)
     mask = tf.cast(mask, dtype=tf.float32)
     mask /= tf.reduce_mean(mask)
     loss *= mask
