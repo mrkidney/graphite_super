@@ -210,7 +210,8 @@ class GCNModelFeedback(Model):
                                          adj=self.adj,
                                          sparse=False,
                                          features_nonzero=self.features_nonzero,
-                                         num_head = 1,
+                                         num_head = FLAGS.num_head if FLAGS.num_head_blowup else 1,
+                                         concat=False,
                                          act=lambda x: x,
                                          dropout=self.dropout,
                                          logging=self.logging)

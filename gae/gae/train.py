@@ -52,6 +52,7 @@ flags.DEFINE_integer('test_count', 100, 'batch of tests')
 flags.DEFINE_integer('subsample', 0, 'sub')
 
 flags.DEFINE_integer('mute_relu', 0, 'mute')
+flags.DEFINE_integer('num_head_blowup', 0, 'num')
 
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_string('model', 'graphite', 'Model string.')

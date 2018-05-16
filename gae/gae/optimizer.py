@@ -49,10 +49,10 @@ def kl_categorical(probs, dim, mask):
     mask = tf.cast(mask, dtype=tf.float32)
     full_mask = tf.expand_dims(mask, 1)
 
-    dummy = tf.ones_like(probs)
+    dummy = tf.ones_like(probs) / (1.0 * dim)
     probs = dummy * full_mask + probs * (1 - full_mask)
 
-    kl = tf.reduce_sum(probs * tf.log(probs * dim), 1)
+    kl = tf.reduce_sum(probs * tf.maximum(tf.log(probs * dim), -10000), 1)
     mask = 1 - mask
     mask /= tf.reduce_mean(mask)
     kl *= mask
@@ -101,7 +101,7 @@ class OptimizerSemiGen(object):
 
         self.cost += (1.0 / num_nodes) * tf.reduce_mean(kl_categorical(y_semi, model.output_dim, model.labels_mask))
 
-        self.cost += (1.0 / num_nodes) * tf.reduce_mean(tf.maximum(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q), -10000))
+        self.cost += (1.0 / num_nodes) * tf.reduce_mean(tf.maximum(log_normal_pdf_tf(model.z1q_mean, model.z1q_log_std, model.z1q, model.output_dim), -10000))
 
         for label in range(model.output_dim):
             y_pos = tf.one_hot(indices = label, depth = model.output_dim)
@@ -112,7 +112,7 @@ class OptimizerSemiGen(object):
             z1p_mean, z1p_log_std = model.decoder_z1(z2, y_pos)
 
             self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * kl(z2_mean, z2_log_std))
-            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * tf.maximum(log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q), -10000))
+            self.cost -= (1.0 / num_nodes) * tf.reduce_mean(y_semi[:,label] * tf.maximum(log_normal_pdf_tf(z1p_mean, z1p_log_std, model.z1q, model.output_dim), -10000))
         
         self.cost *= FLAGS.tau
 
