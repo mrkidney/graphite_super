@@ -172,7 +172,7 @@ for run in range(FLAGS.test_count):
                   "train_acc=", "{:.5f}".format(avg_accuracy), "val_acc=", "{:.5f}".format(val_accuracy))
 
     if FLAGS.pick_best:
-        arg = np.argmax(vals)
+        arg = np.nanargmax(vals)
     else:
         arg = FLAGS.epochs - 1
     runs[run] = tests[arg]
